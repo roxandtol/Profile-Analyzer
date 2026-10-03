@@ -48,35 +48,35 @@ export const Header: React.FC<HeaderProps> = ({
 
   return (
     <header className="border-b border-[#1c2438] bg-[#0c101a]/95 backdrop-blur-md sticky top-0 z-40">
-      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-2.5 sm:py-0 sm:h-16 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 sm:gap-4">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-2.5 lg:py-0 lg:h-16 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-2.5 lg:gap-4">
         {/* Brand & Mobile Controls Row */}
-        <div className="flex items-center justify-between gap-3 w-full sm:w-auto">
+        <div className="flex items-center justify-between gap-3 w-full lg:w-auto">
           {/* Brand */}
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2.5 shrink-0">
             <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-sdvx-accent to-sdvx-cyan flex items-center justify-center shadow-lg shadow-sdvx-accent/20 shrink-0">
               <Zap className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
             </div>
             <div>
               <div className="flex items-center gap-1.5 sm:gap-2">
-                <span className="font-extrabold tracking-wider text-sm sm:text-base text-transparent bg-clip-text bg-gradient-to-r from-sdvx-accent via-pink-400 to-sdvx-cyan">
+                <span className="font-extrabold tracking-wider text-sm sm:text-base text-transparent bg-clip-text bg-gradient-to-r from-sdvx-accent via-pink-400 to-sdvx-cyan whitespace-nowrap">
                   VOLFORCE ROUTE
                 </span>
                 <span className="text-[9px] sm:text-[10px] uppercase font-mono px-1.5 py-0.5 rounded bg-sdvx-card border border-sdvx-border text-gray-400">
                   SDVX
                 </span>
               </div>
-              <p className="text-[11px] text-gray-400 hidden lg:block">Kamaitachi Profile Analyzer & Plan Generator</p>
+              <p className="text-[11px] text-gray-400 hidden xl:block">Kamaitachi Profile Analyzer & Plan Generator</p>
             </div>
           </div>
 
-          {/* Controls on Mobile (visible only on < sm) */}
-          <div className="flex sm:hidden items-center gap-1.5">
+          {/* Controls on Mobile & Tablet (visible on < lg) */}
+          <div className="flex lg:hidden items-center gap-1.5 shrink-0">
             {/* Version Toggle */}
             <div className="flex bg-[#121826] p-0.5 rounded-lg border border-[#202b40]">
               <button
                 type="button"
                 onClick={() => onVersionChange('vf7')}
-                className={`px-2 py-1 rounded text-[11px] font-mono font-bold transition-all ${
+                className={`px-2.5 py-1 rounded text-xs font-mono font-bold transition-all ${
                   version === 'vf7'
                     ? 'bg-sdvx-cyan text-gray-950 shadow-sm'
                     : 'text-gray-400'
@@ -87,7 +87,7 @@ export const Header: React.FC<HeaderProps> = ({
               <button
                 type="button"
                 onClick={() => onVersionChange('vf6')}
-                className={`px-2 py-1 rounded text-[11px] font-mono font-bold transition-all ${
+                className={`px-2.5 py-1 rounded text-xs font-mono font-bold transition-all ${
                   version === 'vf6'
                     ? 'bg-sdvx-accent text-white shadow-sm'
                     : 'text-gray-400'
@@ -109,7 +109,7 @@ export const Header: React.FC<HeaderProps> = ({
                     : 'bg-[#121826] border-[#202b40] text-gray-400'
                 }`}
               >
-                {konasteOnly ? <Monitor className="w-3.5 h-3.5 text-purple-400" /> : <Gamepad2 className="w-3.5 h-3.5 text-amber-400" />}
+                {konasteOnly ? <Monitor className="w-4 h-4 text-purple-400" /> : <Gamepad2 className="w-4 h-4 text-amber-400" />}
               </button>
             )}
 
@@ -123,14 +123,14 @@ export const Header: React.FC<HeaderProps> = ({
                   : 'border-[#202b40] bg-[#121826] text-gray-400'
               }`}
             >
-              <Settings className="w-3.5 h-3.5" />
+              <Settings className="w-4 h-4" />
               {apiKey && <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 absolute top-1 right-1" />}
             </button>
           </div>
         </div>
 
-        {/* Search Bar (Full width on mobile) */}
-        <form onSubmit={handleSubmit} className="w-full sm:flex-1 sm:max-w-md relative">
+        {/* Search Bar (Full width on mobile/tablet, centered on desktop) */}
+        <form onSubmit={handleSubmit} className="w-full lg:flex-1 lg:max-w-md relative min-w-0">
           <input
             type="text"
             value={inputUser}
@@ -152,8 +152,8 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
         </form>
 
-        {/* Desktop Controls (hidden on mobile) */}
-        <div className="hidden sm:flex items-center gap-2">
+        {/* Desktop Controls (hidden on mobile/tablet, visible only on lg:) */}
+        <div className="hidden lg:flex items-center gap-2 shrink-0">
           {/* VF6 Konaste vs Arcade Exceed Gear Toggle */}
           {version === 'vf6' && (
             <button
