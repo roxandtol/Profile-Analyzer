@@ -249,22 +249,22 @@ export const UpscoresTab: React.FC<UpscoresTabProps> = ({ upscores, version, ser
 
                 {/* Score Progression Row */}
                 <div className="bg-[#141b2d] border border-[#1f293d] rounded-lg p-2.5 flex items-center justify-between gap-2 font-mono text-xs">
-                  <div>
+                  <div className="min-w-0">
                     <span className="text-gray-400 text-[10px] block">Current</span>
-                    <div className="flex items-center gap-1 mt-0.5">
-                      <span className="text-gray-200 font-bold">{u.currentScore.toLocaleString()}</span>
-                      <span className={`text-[10px] px-1 rounded border ${lampBadge.bg} ${lampBadge.text} ${lampBadge.border}`}>
+                    <div className="flex items-center gap-1 mt-0.5 whitespace-nowrap">
+                      <span className="text-gray-200 font-bold whitespace-nowrap">{u.currentScore.toLocaleString()}</span>
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded border whitespace-nowrap font-medium ${lampBadge.bg} ${lampBadge.text} ${lampBadge.border}`}>
                         {u.currentLamp}
                       </span>
                     </div>
                   </div>
 
-                  <span className="text-gray-500 text-sm">→</span>
+                  <span className="text-gray-500 text-sm shrink-0">→</span>
 
-                  <div className="text-right">
+                  <div className="text-right min-w-0">
                     <span className="text-sdvx-accent text-[10px] block font-bold">Goal Target</span>
-                    <div className="flex items-center gap-1 justify-end mt-0.5">
-                      <span className="text-sdvx-accent font-bold">{u.targetScore.toLocaleString()}</span>
+                    <div className="flex items-center gap-1 justify-end mt-0.5 whitespace-nowrap">
+                      <span className="text-sdvx-accent font-bold whitespace-nowrap">{u.targetScore.toLocaleString()}</span>
                       <span className="text-[10px] text-gray-300 font-bold">({u.targetGrade})</span>
                     </div>
                   </div>
@@ -272,7 +272,7 @@ export const UpscoresTab: React.FC<UpscoresTabProps> = ({ upscores, version, ser
 
                 {/* Rationale & Category */}
                 <div className="space-y-1">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <span
                       className={`inline-block px-1.5 py-0.2 rounded text-[10px] font-black uppercase tracking-wider ${
                         u.category === 'near-s'
@@ -286,7 +286,7 @@ export const UpscoresTab: React.FC<UpscoresTabProps> = ({ upscores, version, ser
                     >
                       {u.category}
                     </span>
-                    <span className="text-[10px] text-gray-500 font-mono">
+                    <span className="text-[10px] text-gray-500 font-mono whitespace-nowrap">
                       Goal Lamp: {u.targetLamp}
                     </span>
                   </div>
@@ -407,24 +407,24 @@ export const UpscoresTab: React.FC<UpscoresTabProps> = ({ upscores, version, ser
                       </td>
 
                       {/* Current Score */}
-                      <td className="py-3 px-4 font-mono">
+                      <td className="py-3 px-4 font-mono whitespace-nowrap">
                         <span className="text-gray-200 font-bold">{u.currentScore.toLocaleString()}</span>
-                        <div className="flex items-center gap-1.5 mt-0.5">
-                          <span className="text-gray-400 text-[10px]">{u.currentGrade}</span>
-                          <span className={`text-[10px] px-1 rounded border ${lampBadge.bg} ${lampBadge.text} ${lampBadge.border}`}>
+                        <div className="flex items-center gap-1.5 mt-0.5 whitespace-nowrap">
+                          <span className="text-gray-400 text-[10px] shrink-0">{u.currentGrade}</span>
+                          <span className={`text-[10px] px-1.5 py-0.5 rounded border whitespace-nowrap font-medium ${lampBadge.bg} ${lampBadge.text} ${lampBadge.border}`}>
                             {u.currentLamp}
                           </span>
                         </div>
                       </td>
 
                       {/* Target Goal */}
-                      <td className="py-3 px-4 font-mono">
-                        <div className="flex items-center gap-1.5">
+                      <td className="py-3 px-4 font-mono whitespace-nowrap">
+                        <div className="flex items-center gap-1.5 whitespace-nowrap">
                           <span className="text-sdvx-accent font-bold">
                             {u.targetScore.toLocaleString()} ({u.targetGrade})
                           </span>
                         </div>
-                        <span className="text-[10px] text-gray-400 mt-0.5 block">
+                        <span className="text-[10px] text-gray-400 mt-0.5 block whitespace-nowrap">
                           Goal Lamp: {u.targetLamp}
                         </span>
                       </td>

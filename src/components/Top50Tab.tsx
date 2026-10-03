@@ -97,7 +97,7 @@ export const Top50Tab: React.FC<Top50TabProps> = ({ top50Scores, version, cutoff
                     {s.grade}
                   </span>
                 </div>
-                <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${lampBadge.bg} ${lampBadge.text} ${lampBadge.border}`}>
+                <span className={`px-2 py-0.5 rounded text-[10px] font-bold border whitespace-nowrap ${lampBadge.bg} ${lampBadge.text} ${lampBadge.border}`}>
                   {s.lamp}
                 </span>
               </div>
@@ -177,7 +177,7 @@ export const Top50Tab: React.FC<Top50TabProps> = ({ top50Scores, version, cutoff
                     </td>
 
                     {/* Score & Grade */}
-                    <td className="py-3 px-4 font-mono">
+                    <td className="py-3 px-4 font-mono whitespace-nowrap">
                       <span className="text-gray-200 font-bold">{s.score.toLocaleString()}</span>
                       <span className={`ml-2 px-1.5 py-0.2 rounded text-[10px] font-bold ${gradeBadge.bg} ${gradeBadge.text}`}>
                         {s.grade}
@@ -185,8 +185,8 @@ export const Top50Tab: React.FC<Top50TabProps> = ({ top50Scores, version, cutoff
                     </td>
 
                     {/* Lamp */}
-                    <td className="py-3 px-4 font-mono">
-                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${lampBadge.bg} ${lampBadge.text} ${lampBadge.border}`}>
+                    <td className="py-3 px-4 font-mono whitespace-nowrap">
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold border whitespace-nowrap ${lampBadge.bg} ${lampBadge.text} ${lampBadge.border}`}>
                         {s.lamp}
                       </span>
                     </td>

@@ -413,7 +413,7 @@ export function analyzeProfile(
     }
 
     // Opportunity 4: Queue Pushers (Rank 51-100 close to breaking into top 50)
-    if (!s.inTop50 && s.rank <= 80 && s.score >= 9_600_000) {
+    if (!s.inTop50 && s.rank <= 80 && s.score >= 9_600_000 && s.score < 9_900_000) {
       const targetScore = 9_900_000;
       let targetLamp: SDVXLamp;
       if (s.lamp === 'EXCESSIVE CLEAR') {
