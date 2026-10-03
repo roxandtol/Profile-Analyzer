@@ -81,86 +81,92 @@ export const UpscoresTab: React.FC<UpscoresTabProps> = ({ upscores, version, ser
   return (
     <div className="space-y-6">
       {/* Search and Filters Bar */}
-      <div className="bg-[#0f1422] border border-[#1f293d] rounded-2xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
-        {/* Search */}
-        <div className="relative w-full md:flex-1 md:min-w-[240px]">
-          <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
-          <input
-            type="text"
-            placeholder="Search by song title or artist..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full bg-[#141b2d] border border-[#22304d] rounded-lg pl-9 pr-4 py-1.5 text-xs text-white focus:outline-none focus:border-sdvx-cyan"
-          />
-        </div>
+      <div className="bg-[#0f1422] border border-[#1f293d] rounded-2xl p-4 space-y-3.5 shadow-lg">
+        {/* Row 1: Search & Level Filters */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+          {/* Search */}
+          <div className="relative flex-1 min-w-[260px]">
+            <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              placeholder="Search by song title or artist..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full bg-[#141b2d] border border-[#22304d] rounded-lg pl-9 pr-4 py-2 text-xs text-white focus:outline-none focus:border-sdvx-cyan transition-colors"
+            />
+          </div>
 
-        {/* Level Filter */}
-        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 max-w-full">
-          <span className="text-xs text-gray-400 font-mono shrink-0">Level:</span>
-          <button
-            onClick={() => setSelectedLevel('all')}
-            className={`px-2.5 py-1 rounded text-xs font-mono shrink-0 ${
-              selectedLevel === 'all'
-                ? 'bg-sdvx-cyan text-gray-950 font-bold'
-                : 'bg-[#141b2d] text-gray-400 hover:text-white border border-[#202b40]'
-            }`}
-          >
-            All
-          </button>
-          {uniqueLevels.map((lvl) => (
+          {/* Level Filter */}
+          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 shrink-0">
+            <span className="text-xs text-gray-400 font-mono shrink-0">Level:</span>
             <button
-              key={lvl}
-              onClick={() => setSelectedLevel(lvl)}
-              className={`px-2.5 py-1 rounded text-xs font-mono shrink-0 ${
-                selectedLevel === lvl
-                  ? 'bg-sdvx-cyan text-gray-950 font-bold'
+              onClick={() => setSelectedLevel('all')}
+              className={`px-2.5 py-1.5 rounded text-xs font-mono shrink-0 transition-all ${
+                selectedLevel === 'all'
+                  ? 'bg-sdvx-cyan text-gray-950 font-bold shadow-sm'
                   : 'bg-[#141b2d] text-gray-400 hover:text-white border border-[#202b40]'
               }`}
             >
-              {lvl}
+              All
             </button>
-          ))}
+            {uniqueLevels.map((lvl) => (
+              <button
+                key={lvl}
+                onClick={() => setSelectedLevel(lvl)}
+                className={`px-2.5 py-1.5 rounded text-xs font-mono shrink-0 transition-all ${
+                  selectedLevel === lvl
+                    ? 'bg-sdvx-cyan text-gray-950 font-bold shadow-sm'
+                    : 'bg-[#141b2d] text-gray-400 hover:text-white border border-[#202b40]'
+                }`}
+              >
+                {lvl}
+              </button>
+            ))}
+          </div>
         </div>
 
-        {/* Feasibility Filter Toggle */}
-        <div className="flex items-center text-xs">
-          <button
-            onClick={() => setHideLowFeasibility(!hideLowFeasibility)}
-            className={`flex items-center gap-1.5 transition-colors ${
-              hideLowFeasibility ? 'text-sdvx-cyan font-bold' : 'text-gray-400 hover:text-white'
-            }`}
-            title="Filter out upscores with feasibility rating under 40%"
-          >
-            {hideLowFeasibility ? <CheckSquare className="w-4 h-4 text-sdvx-cyan" /> : <Square className="w-4 h-4 text-gray-500" />}
-            Hide &lt;40% Feasibility
-          </button>
-        </div>
+        {/* Row 2: Feasibility Filter Toggle & Sort Controls */}
+        <div className="pt-3 border-t border-[#172033] flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs">
+          {/* Feasibility Filter Toggle */}
+          <div className="flex items-center">
+            <button
+              onClick={() => setHideLowFeasibility(!hideLowFeasibility)}
+              className={`flex items-center gap-1.5 transition-colors ${
+                hideLowFeasibility ? 'text-sdvx-cyan font-bold' : 'text-gray-400 hover:text-white'
+              }`}
+              title="Filter out upscores with feasibility rating under 40%"
+            >
+              {hideLowFeasibility ? <CheckSquare className="w-4 h-4 text-sdvx-cyan" /> : <Square className="w-4 h-4 text-gray-500" />}
+              Hide &lt;40% Feasibility
+            </button>
+          </div>
 
-        {/* Sort Controls */}
-        <div className="flex items-center gap-2 text-xs flex-wrap sm:flex-nowrap">
-          <span className="text-xs text-gray-400 font-mono shrink-0">Sort by:</span>
-          <select
-            value={sortKey}
-            onChange={(e) => setSortKey(e.target.value as UpscoreSortKey)}
-            className="bg-[#141b2d] border border-[#22304d] rounded px-2.5 py-1 text-gray-200 focus:outline-none text-xs font-mono"
-          >
-            <option value="gain">Net VF Gain</option>
-            <option value="feasibility">Feasibility %</option>
-            <option value="diff">Chart Difficulty</option>
-          </select>
+          {/* Sort Controls */}
+          <div className="flex items-center gap-2 self-start md:self-auto shrink-0">
+            <span className="text-xs text-gray-400 font-mono shrink-0">Sort by:</span>
+            <select
+              value={sortKey}
+              onChange={(e) => setSortKey(e.target.value as UpscoreSortKey)}
+              className="bg-[#141b2d] border border-[#22304d] rounded-lg px-2.5 py-1.5 text-gray-200 focus:outline-none text-xs font-mono"
+            >
+              <option value="gain">Net VF Gain</option>
+              <option value="feasibility">Feasibility %</option>
+              <option value="diff">Chart Difficulty</option>
+            </select>
 
-          <button
-            onClick={() => setSortDirection((prev) => (prev === 'desc' ? 'asc' : 'desc'))}
-            title={`Direction: ${sortDirection.toUpperCase()} (Click to invert)`}
-            className="p-1.5 rounded bg-[#141b2d] border border-[#22304d] text-gray-300 hover:text-white hover:border-gray-500 transition-colors flex items-center gap-1 font-mono text-[11px]"
-          >
-            {sortDirection === 'desc' ? (
-              <ArrowDown className="w-3.5 h-3.5 text-sdvx-cyan" />
-            ) : (
-              <ArrowUp className="w-3.5 h-3.5 text-sdvx-cyan" />
-            )}
-            <span className="text-[10px] uppercase text-gray-400 font-bold">{sortDirection}</span>
-          </button>
+            <button
+              onClick={() => setSortDirection((prev) => (prev === 'desc' ? 'asc' : 'desc'))}
+              title={`Direction: ${sortDirection.toUpperCase()} (Click to invert)`}
+              className="px-2.5 py-1.5 rounded-lg bg-[#141b2d] border border-[#22304d] text-gray-300 hover:text-white hover:border-gray-500 transition-colors flex items-center gap-1 font-mono text-[11px]"
+            >
+              {sortDirection === 'desc' ? (
+                <ArrowDown className="w-3.5 h-3.5 text-sdvx-cyan" />
+              ) : (
+                <ArrowUp className="w-3.5 h-3.5 text-sdvx-cyan" />
+              )}
+              <span className="text-[10px] uppercase text-gray-400 font-bold">{sortDirection}</span>
+            </button>
+          </div>
         </div>
       </div>
 
