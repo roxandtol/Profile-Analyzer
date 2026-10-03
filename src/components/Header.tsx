@@ -47,36 +47,98 @@ export const Header: React.FC<HeaderProps> = ({
   };
 
   return (
-    <header className="border-b border-[#1c2438] bg-[#0c101a]/90 backdrop-blur-md sticky top-0 z-40">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
-        {/* Brand */}
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-sdvx-accent to-sdvx-cyan flex items-center justify-center shadow-lg shadow-sdvx-accent/20">
-            <Zap className="w-6 h-6 text-white" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="font-extrabold tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-sdvx-accent via-pink-400 to-sdvx-cyan">
-                VOLFORCE ROUTE
-              </span>
-              <span className="text-[10px] uppercase font-mono px-1.5 py-0.5 rounded bg-sdvx-card border border-sdvx-border text-gray-400">
-                SDVX
-              </span>
+    <header className="border-b border-[#1c2438] bg-[#0c101a]/95 backdrop-blur-md sticky top-0 z-40">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-2.5 sm:py-0 sm:h-16 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 sm:gap-4">
+        {/* Brand & Mobile Controls Row */}
+        <div className="flex items-center justify-between gap-3 w-full sm:w-auto">
+          {/* Brand */}
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-sdvx-accent to-sdvx-cyan flex items-center justify-center shadow-lg shadow-sdvx-accent/20 shrink-0">
+              <Zap className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
             </div>
-            <p className="text-xs text-gray-400 hidden sm:block">Kamaitachi Profile Analyzer & Plan Generator</p>
+            <div>
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <span className="font-extrabold tracking-wider text-sm sm:text-base text-transparent bg-clip-text bg-gradient-to-r from-sdvx-accent via-pink-400 to-sdvx-cyan">
+                  VOLFORCE ROUTE
+                </span>
+                <span className="text-[9px] sm:text-[10px] uppercase font-mono px-1.5 py-0.5 rounded bg-sdvx-card border border-sdvx-border text-gray-400">
+                  SDVX
+                </span>
+              </div>
+              <p className="text-[11px] text-gray-400 hidden lg:block">Kamaitachi Profile Analyzer & Plan Generator</p>
+            </div>
+          </div>
+
+          {/* Controls on Mobile (visible only on < sm) */}
+          <div className="flex sm:hidden items-center gap-1.5">
+            {/* Version Toggle */}
+            <div className="flex bg-[#121826] p-0.5 rounded-lg border border-[#202b40]">
+              <button
+                type="button"
+                onClick={() => onVersionChange('vf7')}
+                className={`px-2 py-1 rounded text-[11px] font-mono font-bold transition-all ${
+                  version === 'vf7'
+                    ? 'bg-sdvx-cyan text-gray-950 shadow-sm'
+                    : 'text-gray-400'
+                }`}
+              >
+                VF7
+              </button>
+              <button
+                type="button"
+                onClick={() => onVersionChange('vf6')}
+                className={`px-2 py-1 rounded text-[11px] font-mono font-bold transition-all ${
+                  version === 'vf6'
+                    ? 'bg-sdvx-accent text-white shadow-sm'
+                    : 'text-gray-400'
+                }`}
+              >
+                VF6
+              </button>
+            </div>
+
+            {/* Konaste toggle on mobile */}
+            {version === 'vf6' && (
+              <button
+                type="button"
+                onClick={() => onKonasteToggle(!konasteOnly)}
+                title={konasteOnly ? 'Konaste PC' : 'Exceed Gear'}
+                className={`p-1.5 rounded-lg border text-xs font-mono font-bold transition-all ${
+                  konasteOnly
+                    ? 'bg-purple-500/20 border-purple-500/50 text-purple-300'
+                    : 'bg-[#121826] border-[#202b40] text-gray-400'
+                }`}
+              >
+                {konasteOnly ? <Monitor className="w-3.5 h-3.5 text-purple-400" /> : <Gamepad2 className="w-3.5 h-3.5 text-amber-400" />}
+              </button>
+            )}
+
+            {/* Settings button on mobile */}
+            <button
+              type="button"
+              onClick={() => setShowSettings(!showSettings)}
+              className={`p-1.5 rounded-lg border transition-colors relative ${
+                apiKey
+                  ? 'border-emerald-500/50 bg-emerald-500/10 text-emerald-400'
+                  : 'border-[#202b40] bg-[#121826] text-gray-400'
+              }`}
+            >
+              <Settings className="w-3.5 h-3.5" />
+              {apiKey && <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 absolute top-1 right-1" />}
+            </button>
           </div>
         </div>
 
-        {/* Search Bar */}
-        <form onSubmit={handleSubmit} className="flex-1 max-w-md relative">
+        {/* Search Bar (Full width on mobile) */}
+        <form onSubmit={handleSubmit} className="w-full sm:flex-1 sm:max-w-md relative">
           <input
             type="text"
             value={inputUser}
             onChange={(e) => setInputUser(e.target.value)}
             placeholder="Enter Kamaitachi username or ID..."
-            className="w-full bg-[#121826] border border-[#202b40] rounded-lg pl-10 pr-24 py-2 text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:border-sdvx-cyan focus:ring-1 focus:ring-sdvx-cyan transition-colors"
+            className="w-full bg-[#121826] border border-[#202b40] rounded-lg pl-9 pr-24 py-2 text-xs sm:text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:border-sdvx-cyan focus:ring-1 focus:ring-sdvx-cyan transition-colors"
           />
-          <Search className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+          <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
           <button
             type="submit"
             disabled={loading || !inputUser.trim()}
@@ -90,8 +152,8 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
         </form>
 
-        {/* Controls */}
-        <div className="flex items-center gap-2">
+        {/* Desktop Controls (hidden on mobile) */}
+        <div className="hidden sm:flex items-center gap-2">
           {/* VF6 Konaste vs Arcade Exceed Gear Toggle */}
           {version === 'vf6' && (
             <button

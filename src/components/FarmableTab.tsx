@@ -76,9 +76,9 @@ export const FarmableTab: React.FC<FarmableTabProps> = ({ farmables, version, se
   return (
     <div className="space-y-6">
       {/* Search and Filters Bar */}
-      <div className="bg-[#0f1422] border border-[#1f293d] rounded-2xl p-4 flex flex-wrap items-center justify-between gap-4">
+      <div className="bg-[#0f1422] border border-[#1f293d] rounded-2xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
         {/* Search */}
-        <div className="relative flex-1 min-w-[240px]">
+        <div className="relative w-full md:flex-1 md:min-w-[240px]">
           <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"
@@ -90,11 +90,11 @@ export const FarmableTab: React.FC<FarmableTabProps> = ({ farmables, version, se
         </div>
 
         {/* Level Filters */}
-        <div className="flex items-center gap-1.5">
-          <span className="text-xs text-gray-400 font-mono">Level:</span>
+        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 max-w-full">
+          <span className="text-xs text-gray-400 font-mono shrink-0">Level:</span>
           <button
             onClick={() => setSelectedLevel('all')}
-            className={`px-2.5 py-1 rounded text-xs font-mono ${
+            className={`px-2.5 py-1 rounded text-xs font-mono shrink-0 ${
               selectedLevel === 'all'
                 ? 'bg-sdvx-cyan text-gray-950 font-bold'
                 : 'bg-[#141b2d] text-gray-400 hover:text-white border border-[#202b40]'
@@ -106,7 +106,7 @@ export const FarmableTab: React.FC<FarmableTabProps> = ({ farmables, version, se
             <button
               key={lvl}
               onClick={() => setSelectedLevel(lvl)}
-              className={`px-2.5 py-1 rounded text-xs font-mono ${
+              className={`px-2.5 py-1 rounded text-xs font-mono shrink-0 ${
                 selectedLevel === lvl
                   ? 'bg-sdvx-cyan text-gray-950 font-bold'
                   : 'bg-[#141b2d] text-gray-400 hover:text-white border border-[#202b40]'
@@ -118,7 +118,7 @@ export const FarmableTab: React.FC<FarmableTabProps> = ({ farmables, version, se
         </div>
 
         {/* Gimmick & Status Toggles */}
-        <div className="flex items-center gap-4 text-xs">
+        <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-xs">
           <button
             onClick={() => setHideGimmicks(!hideGimmicks)}
             className={`flex items-center gap-1.5 transition-colors ${
@@ -152,8 +152,8 @@ export const FarmableTab: React.FC<FarmableTabProps> = ({ farmables, version, se
         </div>
 
         {/* Sort Controls */}
-        <div className="flex items-center gap-2 text-xs">
-          <span className="text-xs text-gray-400 font-mono">Sort by:</span>
+        <div className="flex items-center gap-2 text-xs flex-wrap sm:flex-nowrap">
+          <span className="text-xs text-gray-400 font-mono shrink-0">Sort by:</span>
           <select
             value={sortKey}
             onChange={(e) => setSortKey(e.target.value as FarmableSortKey)}
@@ -180,7 +180,7 @@ export const FarmableTab: React.FC<FarmableTabProps> = ({ farmables, version, se
       </div>
 
       {/* Info notice about VF7 vs VF6 logic */}
-      <div className="bg-[#121826]/70 border border-[#1f293d] rounded-xl px-4 py-3 text-xs flex items-center justify-between gap-4">
+      <div className="bg-[#121826]/70 border border-[#1f293d] rounded-xl px-4 py-3 text-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
         <div className="flex items-center gap-2">
           <Sparkles className="w-4 h-4 text-sdvx-cyan shrink-0" />
           <p className="text-gray-300">
@@ -198,8 +198,106 @@ export const FarmableTab: React.FC<FarmableTabProps> = ({ farmables, version, se
         <span className="text-xs font-mono text-gray-400 shrink-0">{filtered.length} charts</span>
       </div>
 
-      {/* Farmables Table */}
-      <div className="bg-[#0f1422] border border-[#1f293d] rounded-2xl overflow-hidden shadow-xl">
+      {/* Mobile Card List (< md) */}
+      <div className="block md:hidden space-y-3">
+        {sorted.length === 0 ? (
+          <div className="bg-[#0f1422] border border-[#1f293d] rounded-xl p-8 text-center text-gray-500 text-xs">
+            No farmable charts match your active filters. Try lowering the minimum level or clearing search.
+          </div>
+        ) : (
+          sorted.map((f) => {
+            const diffBadge = getDifficultyBadgeColor(f.difficulty);
+            const feasBadge = f.feasibility
+              ? getFeasibilityBadgeColor(f.feasibility.feasibilityTier)
+              : null;
+
+            return (
+              <div
+                key={f.id}
+                className="bg-[#0f1422] border border-[#1f293d] rounded-xl p-3.5 space-y-2.5 shadow-sm"
+              >
+                {/* Header row: Difficulty & Net Gain */}
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span
+                      className={`px-1.5 py-0.5 rounded text-[11px] font-black font-mono border ${diffBadge.bg} ${diffBadge.text} ${diffBadge.border}`}
+                    >
+                      {f.difficulty} {formatChartLevel(f.levelNum, version)}
+                    </span>
+                    {feasBadge && f.feasibility && (
+                      <span
+                        className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold border ${feasBadge.bg} ${feasBadge.text} ${feasBadge.border}`}
+                      >
+                        {f.feasibility.feasibilityPercent}% Feasible
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-right font-mono shrink-0">
+                    <span className="text-emerald-400 font-black text-sm">
+                      +{f.netVFGain.toFixed(3)} VF
+                    </span>
+                  </div>
+                </div>
+
+                {/* Song Title & Artist */}
+                <div>
+                  <a
+                    href={getKamaiChartUrl(f.chart.chartID, server)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-bold text-white text-xs hover:text-sdvx-cyan transition-colors flex items-center gap-1 group"
+                    title="View chart on Kamaitachi"
+                  >
+                    <span>{f.song.title}</span>
+                    <ExternalLink className="w-3 h-3 text-gray-500 group-hover:text-sdvx-cyan transition-colors shrink-0" />
+                  </a>
+                  <p className="text-[11px] text-gray-400 truncate">{f.song.artist}</p>
+                </div>
+
+                {/* Tags row: Tiers & Status */}
+                <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-[#172033] text-[10px] font-mono">
+                  {f.sTier?.text && (
+                    <span className="px-1.5 py-0.5 rounded bg-amber-500/10 border border-amber-500/30 text-amber-400 font-bold">
+                      S: {f.sTier.text}
+                    </span>
+                  )}
+                  {f.clearTier?.text && (
+                    <span className="px-1.5 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-bold">
+                      Clear: {f.clearTier.text}
+                    </span>
+                  )}
+                  {f.individualDifference && (
+                    <span className="flex items-center gap-0.5 text-amber-400">
+                      <AlertTriangle className="w-3 h-3" />
+                      Gimmick
+                    </span>
+                  )}
+
+                  <span className="ml-auto">
+                    {f.isPlayed ? (
+                      <span className="text-amber-400 font-bold">
+                        PB: {f.existingScore?.toLocaleString()}
+                      </span>
+                    ) : (
+                      <span className="text-sdvx-cyan font-bold">Unplayed</span>
+                    )}
+                  </span>
+                </div>
+
+                {/* Primary Advantage */}
+                {f.primaryAdvantage && (
+                  <div className="text-[11px] text-gray-300 bg-[#141b2d] border border-[#1f293d] rounded-lg px-2.5 py-1.5 font-mono">
+                    {f.primaryAdvantage}
+                  </div>
+                )}
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      {/* Desktop Farmables Table (>= md) */}
+      <div className="hidden md:block bg-[#0f1422] border border-[#1f293d] rounded-2xl overflow-hidden shadow-xl">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
             <thead className="bg-[#121826] border-b border-[#1f293d] text-gray-400 font-mono uppercase tracking-wider text-[11px]">

@@ -47,26 +47,26 @@ export const ProfileSummary: React.FC<ProfileSummaryProps> = ({
     .sort((a, b) => b - a);
 
   return (
-    <div className="bg-[#0f1422] border border-[#1f293d] rounded-2xl p-6 shadow-xl relative overflow-hidden">
+    <div className="bg-[#0f1422] border border-[#1f293d] rounded-2xl p-4 sm:p-6 shadow-xl relative overflow-hidden">
       {/* Background glow decoration */}
       <div className="absolute -right-20 -top-20 w-64 h-64 bg-sdvx-accent/10 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute -left-20 -bottom-20 w-64 h-64 bg-sdvx-cyan/10 rounded-full blur-3xl pointer-events-none" />
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 items-center">
         {/* Left Column: Player & Current VF */}
         <div className="lg:col-span-4 flex flex-col gap-3">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-xl bg-[#161f33] border border-[#2b3a58] flex items-center justify-center text-xl font-bold text-sdvx-cyan shadow-inner">
+            <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-[#161f33] border border-[#2b3a58] flex items-center justify-center text-lg sm:text-xl font-bold text-sdvx-cyan shadow-inner shrink-0">
               {username.slice(0, 2).toUpperCase()}
             </div>
-            <div>
+            <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <h1 className="text-xl font-black text-white">{username}</h1>
-                <span className="text-xs text-gray-500 font-mono">#{userID}</span>
+                <h1 className="text-lg sm:text-xl font-black text-white truncate">{username}</h1>
+                <span className="text-xs text-gray-500 font-mono shrink-0">#{userID}</span>
               </div>
               <div className="flex items-center gap-2 mt-0.5">
                 <span
-                  className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-black uppercase tracking-wider border ${currentBadgeColor.bg} ${currentBadgeColor.text} ${currentBadgeColor.border} ${currentBadgeColor.glow}`}
+                  className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] sm:text-xs font-black uppercase tracking-wider border ${currentBadgeColor.bg} ${currentBadgeColor.text} ${currentBadgeColor.border} ${currentBadgeColor.glow}`}
                 >
                   <Award className="w-3.5 h-3.5" />
                   {currentClass}
@@ -75,23 +75,23 @@ export const ProfileSummary: React.FC<ProfileSummaryProps> = ({
             </div>
           </div>
 
-          <div className="bg-[#141b2d] border border-[#22304d] rounded-xl p-4 flex items-baseline justify-between mt-2">
+          <div className="bg-[#141b2d] border border-[#22304d] rounded-xl p-3 sm:p-4 flex items-baseline justify-between mt-1 sm:mt-2">
             <div>
-              <p className="text-xs text-gray-400 font-medium uppercase tracking-wider">Current Volforce</p>
-              <div className="flex items-baseline gap-2 mt-1">
-                <span className="text-3xl font-black font-mono tracking-tight text-white">
+              <p className="text-[11px] sm:text-xs text-gray-400 font-medium uppercase tracking-wider">Current Volforce</p>
+              <div className="flex items-baseline gap-1.5 sm:gap-2 mt-0.5 sm:mt-1">
+                <span className="text-2xl sm:text-3xl font-black font-mono tracking-tight text-white">
                   {currentVF.toFixed(3)}
                 </span>
-                <span className="text-xs font-mono font-bold text-sdvx-cyan uppercase">
+                <span className="text-[10px] sm:text-xs font-mono font-bold text-sdvx-cyan uppercase">
                   {version}
                 </span>
               </div>
             </div>
 
             <div className="text-right">
-              <p className="text-xs text-gray-400 font-medium uppercase tracking-wider">#50 Cutoff Floor</p>
-              <div className="flex items-baseline justify-end gap-1 mt-1" title="The 50th chart in your profile. Any new play must exceed this value to increase your total VF!">
-                <span className="text-xl font-black font-mono text-gray-300">
+              <p className="text-[11px] sm:text-xs text-gray-400 font-medium uppercase tracking-wider">#50 Cutoff Floor</p>
+              <div className="flex items-baseline justify-end gap-1 mt-0.5 sm:mt-1" title="The 50th chart in your profile. Any new play must exceed this value to increase your total VF!">
+                <span className="text-lg sm:text-xl font-black font-mono text-gray-300">
                   {top50Cutoff.toFixed(3)}
                 </span>
                 <ShieldAlert className="w-3.5 h-3.5 text-amber-400" />
@@ -114,8 +114,8 @@ export const ProfileSummary: React.FC<ProfileSummaryProps> = ({
             </span>
           </div>
 
-          <div className="flex items-center gap-3">
-            <div className="relative flex-1">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="relative flex-1 min-w-0">
               <input
                 type="number"
                 step="0.05"
@@ -123,16 +123,16 @@ export const ProfileSummary: React.FC<ProfileSummaryProps> = ({
                 max="24"
                 value={targetVF}
                 onChange={(e) => onTargetChange(parseFloat(e.target.value) || 0)}
-                className="w-full bg-[#141b2d] border border-[#22304d] rounded-xl px-4 py-2.5 text-2xl font-black font-mono text-white focus:outline-none focus:border-sdvx-accent focus:ring-1 focus:ring-sdvx-accent"
+                className="w-full bg-[#141b2d] border border-[#22304d] rounded-xl px-3 sm:px-4 py-2 sm:py-2.5 text-xl sm:text-2xl font-black font-mono text-white focus:outline-none focus:border-sdvx-accent focus:ring-1 focus:ring-sdvx-accent"
               />
-              <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-mono text-gray-400">
+              <span className="absolute right-3 sm:right-3.5 top-1/2 -translate-y-1/2 text-xs font-mono text-gray-400">
                 VF
               </span>
             </div>
 
-            <div className="bg-[#141b2d] border border-[#22304d] rounded-xl px-4 py-2 text-right">
-              <span className="text-[10px] uppercase text-gray-400 tracking-wider">Required Gain</span>
-              <p className="text-lg font-black font-mono text-sdvx-accent">
+            <div className="bg-[#141b2d] border border-[#22304d] rounded-xl px-3 sm:px-4 py-2 text-right shrink-0">
+              <span className="text-[9px] sm:text-[10px] uppercase text-gray-400 tracking-wider">Required Gain</span>
+              <p className="text-base sm:text-lg font-black font-mono text-sdvx-accent">
                 +{deltaNeeded.toFixed(3)}
               </p>
             </div>

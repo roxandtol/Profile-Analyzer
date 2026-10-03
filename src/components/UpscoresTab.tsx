@@ -81,9 +81,9 @@ export const UpscoresTab: React.FC<UpscoresTabProps> = ({ upscores, version, ser
   return (
     <div className="space-y-6">
       {/* Search and Filters Bar */}
-      <div className="bg-[#0f1422] border border-[#1f293d] rounded-2xl p-4 flex flex-wrap items-center justify-between gap-4">
+      <div className="bg-[#0f1422] border border-[#1f293d] rounded-2xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
         {/* Search */}
-        <div className="relative flex-1 min-w-[240px]">
+        <div className="relative w-full md:flex-1 md:min-w-[240px]">
           <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"
@@ -95,11 +95,11 @@ export const UpscoresTab: React.FC<UpscoresTabProps> = ({ upscores, version, ser
         </div>
 
         {/* Level Filter */}
-        <div className="flex items-center gap-1.5">
-          <span className="text-xs text-gray-400 font-mono">Level:</span>
+        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 max-w-full">
+          <span className="text-xs text-gray-400 font-mono shrink-0">Level:</span>
           <button
             onClick={() => setSelectedLevel('all')}
-            className={`px-2 py-1 rounded text-xs font-mono ${
+            className={`px-2.5 py-1 rounded text-xs font-mono shrink-0 ${
               selectedLevel === 'all'
                 ? 'bg-sdvx-cyan text-gray-950 font-bold'
                 : 'bg-[#141b2d] text-gray-400 hover:text-white border border-[#202b40]'
@@ -111,7 +111,7 @@ export const UpscoresTab: React.FC<UpscoresTabProps> = ({ upscores, version, ser
             <button
               key={lvl}
               onClick={() => setSelectedLevel(lvl)}
-              className={`px-2 py-1 rounded text-xs font-mono ${
+              className={`px-2.5 py-1 rounded text-xs font-mono shrink-0 ${
                 selectedLevel === lvl
                   ? 'bg-sdvx-cyan text-gray-950 font-bold'
                   : 'bg-[#141b2d] text-gray-400 hover:text-white border border-[#202b40]'
@@ -137,8 +137,8 @@ export const UpscoresTab: React.FC<UpscoresTabProps> = ({ upscores, version, ser
         </div>
 
         {/* Sort Controls */}
-        <div className="flex items-center gap-2 text-xs">
-          <span className="text-xs text-gray-400 font-mono">Sort by:</span>
+        <div className="flex items-center gap-2 text-xs flex-wrap sm:flex-nowrap">
+          <span className="text-xs text-gray-400 font-mono shrink-0">Sort by:</span>
           <select
             value={sortKey}
             onChange={(e) => setSortKey(e.target.value as UpscoreSortKey)}
@@ -165,12 +165,12 @@ export const UpscoresTab: React.FC<UpscoresTabProps> = ({ upscores, version, ser
       </div>
 
       {/* Category Pills */}
-      <div className="flex flex-wrap gap-2">
+      <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1 max-w-full sm:flex-wrap">
         {categories.map((cat) => (
           <button
             key={cat.id}
             onClick={() => setFilterCategory(cat.id)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-2 border transition-all ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-2 border transition-all shrink-0 ${
               filterCategory === cat.id
                 ? 'bg-sdvx-accent/15 border-sdvx-accent text-sdvx-accent font-bold'
                 : 'bg-[#0f1422] border-[#1f293d] text-gray-400 hover:text-white'
@@ -184,8 +184,118 @@ export const UpscoresTab: React.FC<UpscoresTabProps> = ({ upscores, version, ser
         ))}
       </div>
 
-      {/* Upscores Table */}
-      <div className="bg-[#0f1422] border border-[#1f293d] rounded-2xl overflow-hidden shadow-xl">
+      {/* Mobile Card List (< md) */}
+      <div className="block md:hidden space-y-3">
+        {sorted.length === 0 ? (
+          <div className="bg-[#0f1422] border border-[#1f293d] rounded-xl p-8 text-center text-gray-500 text-xs">
+            No upscore opportunities match your active filters.
+          </div>
+        ) : (
+          sorted.map((u) => {
+            const diffBadge = getDifficultyBadgeColor(u.chart.difficulty);
+            const lampBadge = getLampBadgeColor(u.currentLamp);
+            const feasBadge = u.feasibility
+              ? getFeasibilityBadgeColor(u.feasibility.feasibilityTier)
+              : null;
+
+            return (
+              <div
+                key={u.id}
+                className="bg-[#0f1422] border border-[#1f293d] rounded-xl p-3.5 space-y-2.5 shadow-sm"
+              >
+                {/* Header: Difficulty & Net Gain */}
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span
+                      className={`px-1.5 py-0.5 rounded text-[11px] font-black font-mono border ${diffBadge.bg} ${diffBadge.text} ${diffBadge.border}`}
+                    >
+                      {u.chart.difficulty} {formatChartLevel(u.levelNum, version)}
+                    </span>
+                    {feasBadge && u.feasibility && (
+                      <span
+                        className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold border ${feasBadge.bg} ${feasBadge.text} ${feasBadge.border}`}
+                      >
+                        {u.feasibility.feasibilityPercent}% Feasible
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-right font-mono shrink-0">
+                    <span className="text-emerald-400 font-black text-sm">
+                      +{u.netVFGain.toFixed(3)} VF
+                    </span>
+                  </div>
+                </div>
+
+                {/* Song Title & Artist */}
+                <div>
+                  <a
+                    href={getKamaiChartUrl(u.chart.chartID, server)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-bold text-white text-xs hover:text-sdvx-cyan transition-colors flex items-center gap-1 group"
+                    title="View chart on Kamaitachi"
+                  >
+                    <span>{u.song.title}</span>
+                    <ExternalLink className="w-3 h-3 text-gray-500 group-hover:text-sdvx-cyan transition-colors shrink-0" />
+                  </a>
+                  <p className="text-[11px] text-gray-400 truncate">{u.song.artist}</p>
+                </div>
+
+                {/* Score Progression Row */}
+                <div className="bg-[#141b2d] border border-[#1f293d] rounded-lg p-2.5 flex items-center justify-between gap-2 font-mono text-xs">
+                  <div>
+                    <span className="text-gray-400 text-[10px] block">Current</span>
+                    <div className="flex items-center gap-1 mt-0.5">
+                      <span className="text-gray-200 font-bold">{u.currentScore.toLocaleString()}</span>
+                      <span className={`text-[10px] px-1 rounded border ${lampBadge.bg} ${lampBadge.text} ${lampBadge.border}`}>
+                        {u.currentLamp}
+                      </span>
+                    </div>
+                  </div>
+
+                  <span className="text-gray-500 text-sm">→</span>
+
+                  <div className="text-right">
+                    <span className="text-sdvx-accent text-[10px] block font-bold">Goal Target</span>
+                    <div className="flex items-center gap-1 justify-end mt-0.5">
+                      <span className="text-sdvx-accent font-bold">{u.targetScore.toLocaleString()}</span>
+                      <span className="text-[10px] text-gray-300 font-bold">({u.targetGrade})</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Rationale & Category */}
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={`inline-block px-1.5 py-0.2 rounded text-[10px] font-black uppercase tracking-wider ${
+                        u.category === 'near-s'
+                          ? 'bg-pink-500/10 text-pink-400 border border-pink-500/30'
+                          : u.category === 'near-aaa-plus'
+                          ? 'bg-rose-500/10 text-rose-400 border border-rose-500/30'
+                          : u.category === 'lamp-upgrade'
+                          ? 'bg-purple-500/10 text-purple-400 border border-purple-500/30'
+                          : 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/30'
+                      }`}
+                    >
+                      {u.category}
+                    </span>
+                    <span className="text-[10px] text-gray-500 font-mono">
+                      Goal Lamp: {u.targetLamp}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-gray-400">
+                    {u.description}
+                  </p>
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      {/* Desktop Upscores Table (>= md) */}
+      <div className="hidden md:block bg-[#0f1422] border border-[#1f293d] rounded-2xl overflow-hidden shadow-xl">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
             <thead className="bg-[#121826] border-b border-[#1f293d] text-gray-400 font-mono uppercase tracking-wider text-[11px]">

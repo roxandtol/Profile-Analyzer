@@ -89,10 +89,10 @@ export const ExportModal: React.FC<ExportModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-      <div className="bg-[#0f1422] border border-[#22304d] rounded-2xl w-full max-w-2xl max-h-[85vh] flex flex-col shadow-2xl relative overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/80 backdrop-blur-sm">
+      <div className="bg-[#0f1422] border border-[#22304d] rounded-2xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl relative overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-[#1f293d] bg-[#121826]">
+        <div className="flex items-center justify-between p-3 sm:p-4 border-b border-[#1f293d] bg-[#121826]">
           <div className="flex items-center gap-2">
             <FileText className="w-5 h-5 text-sdvx-cyan" />
             <h3 className="font-bold text-white text-sm">Export Arcade Session Plan</h3>
@@ -106,11 +106,11 @@ export const ExportModal: React.FC<ExportModalProps> = ({
         </div>
 
         {/* Format Selector Bar */}
-        <div className="p-4 border-b border-[#1f293d] flex items-center justify-between gap-4 text-xs">
-          <div className="flex bg-[#141b2d] p-1 rounded-lg border border-[#22304d]">
+        <div className="p-3 sm:p-4 border-b border-[#1f293d] flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 text-xs">
+          <div className="flex bg-[#141b2d] p-1 rounded-lg border border-[#22304d] w-full sm:w-auto justify-center">
             <button
               onClick={() => setFormat('markdown')}
-              className={`px-3 py-1 rounded font-medium transition-all ${
+              className={`flex-1 sm:flex-initial px-3 py-1 rounded font-medium text-center transition-all ${
                 format === 'markdown'
                   ? 'bg-sdvx-cyan text-gray-950 font-bold'
                   : 'text-gray-400 hover:text-white'
@@ -120,7 +120,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
             </button>
             <button
               onClick={() => setFormat('text')}
-              className={`px-3 py-1 rounded font-medium transition-all ${
+              className={`flex-1 sm:flex-initial px-3 py-1 rounded font-medium text-center transition-all ${
                 format === 'text'
                   ? 'bg-sdvx-cyan text-gray-950 font-bold'
                   : 'text-gray-400 hover:text-white'
@@ -130,10 +130,10 @@ export const ExportModal: React.FC<ExportModalProps> = ({
             </button>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 justify-end sm:justify-start w-full sm:w-auto">
             <button
               onClick={handleCopy}
-              className="px-3 py-1.5 rounded-lg bg-[#141b2d] border border-[#22304d] text-gray-200 hover:text-white hover:border-gray-500 font-medium flex items-center gap-1.5 transition-all text-xs"
+              className="flex-1 sm:flex-initial justify-center px-3 py-1.5 rounded-lg bg-[#141b2d] border border-[#22304d] text-gray-200 hover:text-white hover:border-gray-500 font-medium flex items-center gap-1.5 transition-all text-xs"
             >
               {copied ? (
                 <>
@@ -150,7 +150,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
 
             <button
               onClick={handleDownload}
-              className="px-3 py-1.5 rounded-lg bg-sdvx-accent hover:bg-pink-600 text-white font-medium flex items-center gap-1.5 transition-all text-xs"
+              className="flex-1 sm:flex-initial justify-center px-3 py-1.5 rounded-lg bg-sdvx-accent hover:bg-pink-600 text-white font-medium flex items-center gap-1.5 transition-all text-xs"
             >
               <Download className="w-3.5 h-3.5" />
               <span>Download File</span>
@@ -159,7 +159,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
         </div>
 
         {/* Content Box */}
-        <div className="p-4 overflow-y-auto flex-1 font-mono text-xs text-gray-300 bg-[#0a0d14]">
+        <div className="p-3 sm:p-4 overflow-y-auto flex-1 font-mono text-xs text-gray-300 bg-[#0a0d14]">
           <pre className="whitespace-pre-wrap">{content}</pre>
         </div>
       </div>

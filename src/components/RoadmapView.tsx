@@ -320,58 +320,56 @@ export const RoadmapView: React.FC<RoadmapViewProps> = ({
                     : 'bg-[#0f1422] border-[#1f293d] hover:border-[#2b3a58]'
                 }`}
               >
-                <div className="flex items-start justify-between gap-4">
+                <div className="flex items-start justify-between gap-2 sm:gap-4">
                   {/* Left: Checkbox & Step Number */}
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
                     <button
                       onClick={() => toggleStep(step.stepNumber)}
                       className="mt-0.5 text-gray-500 hover:text-emerald-400 transition-colors"
                       title={isDone ? 'Mark as incomplete' : 'Mark as completed'}
                     >
                       {isDone ? (
-                        <CheckCircle2 className="w-6 h-6 text-emerald-400 fill-emerald-400/20" />
+                        <CheckCircle2 className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-400 fill-emerald-400/20" />
                       ) : (
-                        <Circle className="w-6 h-6 text-gray-600 hover:text-gray-400" />
+                        <Circle className="w-5 h-5 sm:w-6 sm:h-6 text-gray-600 hover:text-gray-400" />
                       )}
                     </button>
 
-                    <div className="flex items-center gap-2">
-                      <span className="w-7 h-7 rounded-lg bg-[#141b2d] border border-[#22304d] flex items-center justify-center text-xs font-mono font-bold text-gray-300">
-                        #{step.stepNumber}
-                      </span>
+                    <span className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-[#141b2d] border border-[#22304d] flex items-center justify-center text-[11px] sm:text-xs font-mono font-bold text-gray-300 shrink-0">
+                      #{step.stepNumber}
+                    </span>
 
+                    <span
+                      className={`px-1.5 sm:px-2 py-0.5 rounded text-[9px] sm:text-[10px] font-black uppercase tracking-wider border ${
+                        step.type === 'upscore'
+                          ? 'bg-amber-500/10 text-amber-400 border-amber-500/30'
+                          : 'bg-sdvx-cyan/10 text-sdvx-cyan border-sdvx-cyan/30'
+                      }`}
+                    >
+                      {step.type}
+                    </span>
+
+                    {feasBadge && step.feasibility && (
                       <span
-                        className={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider border ${
-                          step.type === 'upscore'
-                            ? 'bg-amber-500/10 text-amber-400 border-amber-500/30'
-                            : 'bg-sdvx-cyan/10 text-sdvx-cyan border-sdvx-cyan/30'
-                        }`}
+                        className={`px-1.5 sm:px-2 py-0.5 rounded text-[9px] sm:text-[10px] font-mono font-bold border whitespace-nowrap ${feasBadge.bg} ${feasBadge.text} ${feasBadge.border}`}
+                        title={step.feasibility.explanation}
                       >
-                        {step.type}
+                        {step.feasibility.feasibilityPercent}% Feasible
                       </span>
-
-                      {feasBadge && step.feasibility && (
-                        <span
-                          className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold border whitespace-nowrap ${feasBadge.bg} ${feasBadge.text} ${feasBadge.border}`}
-                          title={step.feasibility.explanation}
-                        >
-                          {step.feasibility.feasibilityPercent}% Feasible
-                        </span>
-                      )}
-                    </div>
+                    )}
                   </div>
 
                   {/* Right: Net VF Gain & Dismiss */}
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2 sm:gap-3 shrink-0">
                     <div className="text-right">
                       <div className="flex items-baseline justify-end gap-1">
-                        <span className="text-sm font-black font-mono text-emerald-400">
+                        <span className="text-xs sm:text-sm font-black font-mono text-emerald-400">
                           +{step.netVFGain.toFixed(3)}
                         </span>
-                        <span className="text-[10px] font-mono text-gray-400">VF</span>
+                        <span className="text-[9px] sm:text-[10px] font-mono text-gray-400">VF</span>
                       </div>
-                      <span className="text-[10px] font-mono text-gray-500">
-                        Running: {step.cumulativeProfileVF.toFixed(3)}
+                      <span className="text-[9px] sm:text-[10px] font-mono text-gray-500 block">
+                        Run: {step.cumulativeProfileVF.toFixed(3)}
                       </span>
                     </div>
 
@@ -380,16 +378,16 @@ export const RoadmapView: React.FC<RoadmapViewProps> = ({
                       className="p-1 rounded text-gray-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
                       title="Dismiss song from plan"
                     >
-                      <X className="w-4 h-4" />
+                      <X className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                     </button>
                   </div>
                 </div>
 
                 {/* Song Information & Difficulty */}
-                <div className="mt-3 pl-9">
-                  <div className="flex flex-wrap items-center gap-2">
+                <div className="mt-2.5 sm:mt-3 pl-0 sm:pl-9">
+                  <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
                     <span
-                      className={`px-2 py-0.5 rounded text-xs font-black font-mono border ${diffBadge.bg} ${diffBadge.text} ${diffBadge.border}`}
+                      className={`px-1.5 sm:px-2 py-0.5 rounded text-[11px] sm:text-xs font-black font-mono border ${diffBadge.bg} ${diffBadge.text} ${diffBadge.border}`}
                     >
                       {step.chart.difficulty} {formatChartLevel(step.chart.levelNum, version)}
                     </span>
@@ -397,22 +395,22 @@ export const RoadmapView: React.FC<RoadmapViewProps> = ({
                       href={getKamaiChartUrl(step.chart.chartID, server)}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-sm font-bold text-white hover:text-sdvx-cyan transition-colors flex items-center gap-1.5 group"
+                      className="text-xs sm:text-sm font-bold text-white hover:text-sdvx-cyan transition-colors flex items-center gap-1.5 group break-all"
                       title="View chart on Kamaitachi"
                     >
                       <span>{step.song.title}</span>
-                      <ExternalLink className="w-3.5 h-3.5 text-gray-500 group-hover:text-sdvx-cyan transition-colors shrink-0" />
+                      <ExternalLink className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-gray-500 group-hover:text-sdvx-cyan transition-colors shrink-0" />
                     </a>
-                    <span className="text-xs text-gray-400 font-medium">by {step.song.artist}</span>
+                    <span className="text-[11px] sm:text-xs text-gray-400 font-medium">by {step.song.artist}</span>
                   </div>
 
                   {/* Target Strategy & Rationale */}
-                  <div className="mt-2.5 flex flex-wrap items-center gap-3 text-xs bg-[#141b2d]/60 border border-[#202b40] rounded-lg p-2.5">
-                    <div className="flex items-center gap-2 font-mono">
+                  <div className="mt-2 flex flex-col sm:flex-row sm:flex-wrap items-start sm:items-center gap-2 sm:gap-3 text-xs bg-[#141b2d]/60 border border-[#202b40] rounded-lg p-2 sm:p-2.5">
+                    <div className="flex items-center gap-2 font-mono text-[11px] sm:text-xs">
                       {step.currentScore ? (
                         <>
                           <span className="text-gray-400">{step.currentScore.toLocaleString()}</span>
-                          <ArrowRight className="w-3.5 h-3.5 text-gray-500" />
+                          <ArrowRight className="w-3 h-3 text-gray-500 shrink-0" />
                           <span className="font-bold text-sdvx-accent">
                             {step.targetScore.toLocaleString()} ({step.targetGrade || 'S'})
                           </span>
@@ -420,7 +418,7 @@ export const RoadmapView: React.FC<RoadmapViewProps> = ({
                       ) : (
                         <>
                           <span className="text-gray-400">Unplayed</span>
-                          <ArrowRight className="w-3.5 h-3.5 text-gray-500" />
+                          <ArrowRight className="w-3 h-3 text-gray-500 shrink-0" />
                           <span className="font-bold text-sdvx-cyan">
                             {step.targetScore.toLocaleString()} ({step.targetGrade || 'S'})
                           </span>
@@ -429,67 +427,71 @@ export const RoadmapView: React.FC<RoadmapViewProps> = ({
                     </div>
 
                     {/* Step Lamp Switcher */}
-                    <div className="flex items-center gap-1 bg-[#0a0d14] px-1.5 py-0.5 rounded-lg border border-[#202b40]">
-                      <span className="text-[10px] text-gray-400 font-mono font-medium mr-1">Goal Lamp:</span>
+                    <div className="flex items-center gap-1 bg-[#0a0d14] px-1.5 py-0.5 rounded-lg border border-[#202b40] max-w-full overflow-x-auto">
+                      <span className="text-[10px] text-gray-400 font-mono font-medium mr-0.5 sm:mr-1 shrink-0">Lamp:</span>
                       <button
                         type="button"
                         onClick={() => onChangeStepLamp?.(step.stepNumber, 'CLEAR')}
-                        className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold transition-all border ${
+                        className={`px-1.5 sm:px-2 py-0.5 rounded text-[9px] sm:text-[10px] font-mono font-bold transition-all border shrink-0 ${
                           step.targetLamp === 'CLEAR'
                             ? 'bg-emerald-500/25 text-emerald-400 border-emerald-500/60 shadow-sm'
                             : 'border-transparent text-gray-500 hover:text-gray-300'
                         }`}
                         title="Normal Clear (100% lamp coefficient)"
                       >
-                        CLEAR (100%)
+                        <span className="sm:hidden">CLR</span>
+                        <span className="hidden sm:inline">CLEAR (100%)</span>
                       </button>
                       <button
                         type="button"
                         onClick={() => onChangeStepLamp?.(step.stepNumber, 'EXCESSIVE CLEAR')}
-                        className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold transition-all border ${
+                        className={`px-1.5 sm:px-2 py-0.5 rounded text-[9px] sm:text-[10px] font-mono font-bold transition-all border shrink-0 ${
                           step.targetLamp === 'EXCESSIVE CLEAR'
                             ? 'bg-purple-500/25 text-purple-400 border-purple-500/60 shadow-sm'
                             : 'border-transparent text-gray-500 hover:text-gray-300'
                         }`}
                         title="Excessive Clear (102% lamp coefficient)"
                       >
-                        EXCESSIVE (102%)
+                        <span className="sm:hidden">EXC</span>
+                        <span className="hidden sm:inline">EXCESSIVE (102%)</span>
                       </button>
                       <button
                         type="button"
                         onClick={() => onChangeStepLamp?.(step.stepNumber, 'MAXXIVE CLEAR')}
-                        className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold transition-all border ${
+                        className={`px-1.5 sm:px-2 py-0.5 rounded text-[9px] sm:text-[10px] font-mono font-bold transition-all border shrink-0 ${
                           step.targetLamp === 'MAXXIVE CLEAR'
                             ? 'bg-amber-500/25 text-amber-400 border-amber-500/60 shadow-sm'
                             : 'border-transparent text-gray-500 hover:text-gray-300'
                         }`}
                         title="Maxxive Clear (104% lamp coefficient)"
                       >
-                        MAXXIVE (104%)
+                        <span className="sm:hidden">MAX</span>
+                        <span className="hidden sm:inline">MAXXIVE (104%)</span>
                       </button>
                       <button
                         type="button"
                         onClick={() => onChangeStepLamp?.(step.stepNumber, 'ULTIMATE CHAIN')}
-                        className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold transition-all border ${
+                        className={`px-1.5 sm:px-2 py-0.5 rounded text-[9px] sm:text-[10px] font-mono font-bold transition-all border shrink-0 ${
                           step.targetLamp === 'ULTIMATE CHAIN'
                             ? 'bg-rose-500/25 text-rose-400 border-rose-500/60 shadow-sm'
                             : 'border-transparent text-gray-500 hover:text-gray-300'
                         }`}
                         title={`Ultimate Chain - Full Combo (${version === 'vf7' ? '106%' : '105%'} lamp coefficient)`}
                       >
-                        UC ({version === 'vf7' ? '106%' : '105%'})
+                        <span className="sm:hidden">UC</span>
+                        <span className="hidden sm:inline">UC ({version === 'vf7' ? '106%' : '105%'})</span>
                       </button>
                     </div>
 
-                    <span className="text-gray-600">|</span>
+                    <span className="text-gray-600 hidden sm:inline">|</span>
 
-                    <span className="text-gray-300 font-mono text-[11px]">
+                    <span className="text-gray-300 font-mono text-[10px] sm:text-[11px]">
                       {step.primaryFactor}
                     </span>
 
                     <span className="text-gray-600 hidden sm:inline">|</span>
 
-                    <p className="text-gray-400 text-[11px] flex-1 min-w-[200px]">
+                    <p className="text-gray-400 text-[10px] sm:text-[11px] flex-1 min-w-[200px]">
                       💡 {step.rationale}
                     </p>
                   </div>

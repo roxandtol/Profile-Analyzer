@@ -341,7 +341,7 @@ export const App: React.FC = () => {
         onApiKeySave={handleApiKeySave}
       />
 
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8 space-y-5 sm:space-y-8">
         {/* Error Alert */}
         {error && (
           <div className="bg-rose-500/10 border border-rose-500/30 rounded-xl p-4 text-xs text-rose-300 flex items-center justify-between">
@@ -379,64 +379,74 @@ export const App: React.FC = () => {
             />
 
             {/* Navigation Tabs Bar */}
-            <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#1c2438] pb-1">
-              <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-[#1c2438] pb-1">
+              <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar pb-1 sm:pb-0 w-full sm:w-auto -mx-3 px-3 sm:mx-0 sm:px-0">
                 <button
+                  type="button"
                   onClick={() => setActiveTab('roadmap')}
-                  className={`px-4 py-2.5 rounded-lg text-xs font-bold font-mono uppercase tracking-wider flex items-center gap-2 transition-all ${
+                  className={`px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg text-xs font-bold font-mono uppercase tracking-wider flex items-center gap-1.5 sm:gap-2 whitespace-nowrap transition-all shrink-0 ${
                     activeTab === 'roadmap'
                       ? 'bg-sdvx-cyan text-gray-950 shadow-md shadow-sdvx-cyan/20'
                       : 'text-gray-400 hover:text-white hover:bg-[#141b2d]'
                   }`}
                 >
-                  <Route className="w-4 h-4" />
-                  Roadmap Plan ({roadmapSteps.length})
+                  <Route className="w-4 h-4 shrink-0" />
+                  <span>Roadmap</span>
+                  <span className="opacity-75 font-normal">({roadmapSteps.length})</span>
                 </button>
 
                 <button
+                  type="button"
                   onClick={() => setActiveTab('upscores')}
-                  className={`px-4 py-2.5 rounded-lg text-xs font-bold font-mono uppercase tracking-wider flex items-center gap-2 transition-all ${
+                  className={`px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg text-xs font-bold font-mono uppercase tracking-wider flex items-center gap-1.5 sm:gap-2 whitespace-nowrap transition-all shrink-0 ${
                     activeTab === 'upscores'
                       ? 'bg-sdvx-accent text-white shadow-md shadow-sdvx-accent/20'
                       : 'text-gray-400 hover:text-white hover:bg-[#141b2d]'
                   }`}
                 >
-                  <Flame className="w-4 h-4" />
-                  Low-Hanging Upscores ({activeUpscores.length})
+                  <Flame className="w-4 h-4 shrink-0" />
+                  <span className="hidden sm:inline">Low-Hanging</span>
+                  <span>Upscores</span>
+                  <span className="opacity-75 font-normal">({activeUpscores.length})</span>
                 </button>
 
                 <button
+                  type="button"
                   onClick={() => setActiveTab('farmable')}
-                  className={`px-4 py-2.5 rounded-lg text-xs font-bold font-mono uppercase tracking-wider flex items-center gap-2 transition-all ${
+                  className={`px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg text-xs font-bold font-mono uppercase tracking-wider flex items-center gap-1.5 sm:gap-2 whitespace-nowrap transition-all shrink-0 ${
                     activeTab === 'farmable'
                       ? 'bg-emerald-400 text-gray-950 shadow-md shadow-emerald-400/20'
                       : 'text-gray-400 hover:text-white hover:bg-[#141b2d]'
                   }`}
                 >
-                  <Target className="w-4 h-4" />
-                  Farmable Hit List ({farmables.length})
+                  <Target className="w-4 h-4 shrink-0" />
+                  <span className="hidden sm:inline">Farmable</span>
+                  <span>Hit List</span>
+                  <span className="opacity-75 font-normal">({farmables.length})</span>
                 </button>
 
                 <button
+                  type="button"
                   onClick={() => setActiveTab('top50')}
-                  className={`px-4 py-2.5 rounded-lg text-xs font-bold font-mono uppercase tracking-wider flex items-center gap-2 transition-all ${
+                  className={`px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg text-xs font-bold font-mono uppercase tracking-wider flex items-center gap-1.5 sm:gap-2 whitespace-nowrap transition-all shrink-0 ${
                     activeTab === 'top50'
                       ? 'bg-slate-200 text-gray-950 shadow-md'
                       : 'text-gray-400 hover:text-white hover:bg-[#141b2d]'
                   }`}
                 >
-                  <ListOrdered className="w-4 h-4" />
-                  Top 50 Plays
+                  <ListOrdered className="w-4 h-4 shrink-0" />
+                  <span>Top 50</span>
                 </button>
               </div>
 
               {/* Export Button */}
               <button
+                type="button"
                 onClick={() => setShowExportModal(true)}
-                className="px-3.5 py-2 rounded-lg bg-[#141b2d] border border-[#22304d] hover:border-sdvx-cyan text-gray-200 hover:text-white text-xs font-medium font-mono flex items-center gap-2 transition-all shadow-sm"
+                className="w-full sm:w-auto justify-center px-3.5 py-2 rounded-lg bg-[#141b2d] border border-[#22304d] hover:border-sdvx-cyan text-gray-200 hover:text-white text-xs font-medium font-mono flex items-center gap-2 transition-all shadow-sm shrink-0"
               >
                 <Share2 className="w-3.5 h-3.5 text-sdvx-cyan" />
-                Export Arcade Plan
+                <span>Export Arcade Plan</span>
               </button>
             </div>
 
