@@ -387,7 +387,7 @@ export const RoadmapView: React.FC<RoadmapViewProps> = ({
                 <div className="mt-2.5 sm:mt-3 pl-0 sm:pl-9">
                   <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
                     <span
-                      className={`px-1.5 sm:px-2 py-0.5 rounded text-[11px] sm:text-xs font-black font-mono border ${diffBadge.bg} ${diffBadge.text} ${diffBadge.border}`}
+                      className={`px-1.5 sm:px-2 py-0.5 rounded text-[11px] sm:text-xs font-black font-mono border whitespace-nowrap shrink-0 ${diffBadge.bg} ${diffBadge.text} ${diffBadge.border}`}
                     >
                       {step.chart.difficulty} {formatChartLevel(step.chart.levelNum, version)}
                     </span>
@@ -535,7 +535,7 @@ export const RoadmapView: React.FC<RoadmapViewProps> = ({
                               >
                                 <div className="flex items-center gap-2">
                                   <span
-                                    className={`px-1.5 py-0.5 rounded text-[10px] font-black font-mono border ${altDiffBadge.bg} ${altDiffBadge.text} ${altDiffBadge.border}`}
+                                    className={`px-1.5 py-0.5 rounded text-[10px] font-black font-mono border whitespace-nowrap shrink-0 ${altDiffBadge.bg} ${altDiffBadge.text} ${altDiffBadge.border}`}
                                   >
                                     {alt.chart.difficulty} {formatChartLevel(alt.chart.levelNum, version)}
                                   </span>

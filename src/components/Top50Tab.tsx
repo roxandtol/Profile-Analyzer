@@ -60,7 +60,7 @@ export const Top50Tab: React.FC<Top50TabProps> = ({ top50Scores, version, cutoff
                     #{s.rank}
                   </span>
                   <span
-                    className={`px-1.5 py-0.5 rounded text-[11px] font-black font-mono border ${diffBadge.bg} ${diffBadge.text} ${diffBadge.border}`}
+                    className={`px-1.5 py-0.5 rounded text-[11px] font-black font-mono border whitespace-nowrap shrink-0 ${diffBadge.bg} ${diffBadge.text} ${diffBadge.border}`}
                   >
                     {s.chart.difficulty} {formatChartLevel(s.chart.levelNum, version)}
                   </span>
@@ -156,11 +156,11 @@ export const Top50Tab: React.FC<Top50TabProps> = ({ top50Scores, version, cutoff
                     <td className="py-3 px-4">
                       <div className="flex items-center gap-2">
                         <span
-                          className={`px-1.5 py-0.5 rounded text-[11px] font-black font-mono border ${diffBadge.bg} ${diffBadge.text} ${diffBadge.border}`}
+                          className={`px-1.5 py-0.5 rounded text-[11px] font-black font-mono border whitespace-nowrap shrink-0 ${diffBadge.bg} ${diffBadge.text} ${diffBadge.border}`}
                         >
                           {s.chart.difficulty} {formatChartLevel(s.chart.levelNum, version)}
                         </span>
-                        <div>
+                        <div className="min-w-0">
                           <a
                             href={getKamaiChartUrl(s.chart.chartID, server)}
                             target="_blank"
@@ -171,7 +171,7 @@ export const Top50Tab: React.FC<Top50TabProps> = ({ top50Scores, version, cutoff
                             <span>{s.song.title}</span>
                             <ExternalLink className="w-3 h-3 text-gray-500 group-hover:text-sdvx-cyan transition-colors shrink-0" />
                           </a>
-                          <p className="text-[11px] text-gray-400">{s.song.artist}</p>
+                          <p className="text-[11px] text-gray-400 truncate">{s.song.artist}</p>
                         </div>
                       </div>
                     </td>

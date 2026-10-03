@@ -226,7 +226,7 @@ export const FarmableTab: React.FC<FarmableTabProps> = ({ farmables, version, se
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span
-                      className={`px-1.5 py-0.5 rounded text-[11px] font-black font-mono border ${diffBadge.bg} ${diffBadge.text} ${diffBadge.border}`}
+                      className={`px-1.5 py-0.5 rounded text-[11px] font-black font-mono border whitespace-nowrap shrink-0 ${diffBadge.bg} ${diffBadge.text} ${diffBadge.border}`}
                     >
                       {f.difficulty} {formatChartLevel(f.levelNum, version)}
                     </span>
@@ -387,11 +387,11 @@ export const FarmableTab: React.FC<FarmableTabProps> = ({ farmables, version, se
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-2">
                           <span
-                            className={`px-1.5 py-0.5 rounded text-[11px] font-black font-mono border ${diffBadge.bg} ${diffBadge.text} ${diffBadge.border}`}
+                            className={`px-1.5 py-0.5 rounded text-[11px] font-black font-mono border whitespace-nowrap shrink-0 ${diffBadge.bg} ${diffBadge.text} ${diffBadge.border}`}
                           >
                             {f.difficulty} {formatChartLevel(f.levelNum, version)}
                           </span>
-                          <div>
+                          <div className="min-w-0">
                             <a
                               href={getKamaiChartUrl(f.chart.chartID, server)}
                               target="_blank"
@@ -402,7 +402,7 @@ export const FarmableTab: React.FC<FarmableTabProps> = ({ farmables, version, se
                               <span>{f.song.title}</span>
                               <ExternalLink className="w-3 h-3 text-gray-500 group-hover:text-sdvx-cyan transition-colors shrink-0" />
                             </a>
-                            <p className="text-[11px] text-gray-400">{f.song.artist}</p>
+                            <p className="text-[11px] text-gray-400 truncate">{f.song.artist}</p>
                           </div>
                         </div>
                       </td>

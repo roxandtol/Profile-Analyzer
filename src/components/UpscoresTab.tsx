@@ -213,7 +213,7 @@ export const UpscoresTab: React.FC<UpscoresTabProps> = ({ upscores, version, ser
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span
-                      className={`px-1.5 py-0.5 rounded text-[11px] font-black font-mono border ${diffBadge.bg} ${diffBadge.text} ${diffBadge.border}`}
+                      className={`px-1.5 py-0.5 rounded text-[11px] font-black font-mono border whitespace-nowrap shrink-0 ${diffBadge.bg} ${diffBadge.text} ${diffBadge.border}`}
                     >
                       {u.chart.difficulty} {formatChartLevel(u.levelNum, version)}
                     </span>
@@ -386,11 +386,11 @@ export const UpscoresTab: React.FC<UpscoresTabProps> = ({ upscores, version, ser
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-2">
                           <span
-                            className={`px-1.5 py-0.5 rounded text-[11px] font-black font-mono border ${diffBadge.bg} ${diffBadge.text} ${diffBadge.border}`}
+                            className={`px-1.5 py-0.5 rounded text-[11px] font-black font-mono border whitespace-nowrap shrink-0 ${diffBadge.bg} ${diffBadge.text} ${diffBadge.border}`}
                           >
                             {u.chart.difficulty} {formatChartLevel(u.levelNum, version)}
                           </span>
-                          <div>
+                          <div className="min-w-0">
                             <a
                               href={getKamaiChartUrl(u.chart.chartID, server)}
                               target="_blank"
@@ -401,7 +401,7 @@ export const UpscoresTab: React.FC<UpscoresTabProps> = ({ upscores, version, ser
                               <span>{u.song.title}</span>
                               <ExternalLink className="w-3 h-3 text-gray-500 group-hover:text-sdvx-cyan transition-colors shrink-0" />
                             </a>
-                            <p className="text-[11px] text-gray-400">{u.song.artist}</p>
+                            <p className="text-[11px] text-gray-400 truncate">{u.song.artist}</p>
                           </div>
                         </div>
                       </td>
