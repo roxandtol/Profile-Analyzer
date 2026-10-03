@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { getKamaiChartUrl, getKamaiSongUrl } from '../../utils/tachiUrl';
+import {
+  getKamaiChartUrl,
+  getKamaiSongUrl,
+  getKamaiUserPfpUrl,
+  getKamaiUserUrl,
+} from '../../utils/tachiUrl';
 
 describe('Kamaitachi URL Generator', () => {
   it('generates correct Kamaitachi chart URLs', () => {
@@ -15,5 +20,18 @@ describe('Kamaitachi URL Generator', () => {
   it('generates correct song URLs', () => {
     const url = getKamaiSongUrl('S19d35e0df253ce24a2a', 'kamai');
     expect(url).toBe('https://kamai.tachi.ac/games/sdvx/songs/S19d35e0df253ce24a2a');
+  });
+
+  it('generates correct user pfp URLs', () => {
+    const kamaiPfp = getKamaiUserPfpUrl(1136, 'kamai');
+    expect(kamaiPfp).toBe('https://kamai.tachi.ac/api/v1/users/1136/pfp');
+
+    const bokuPfp = getKamaiUserPfpUrl('roxandtol', 'boku');
+    expect(bokuPfp).toBe('https://boku.tachi.ac/api/v1/users/roxandtol/pfp');
+  });
+
+  it('generates correct user profile web URLs', () => {
+    const userUrl = getKamaiUserUrl('roxandtol', 'kamai');
+    expect(userUrl).toBe('https://kamai.tachi.ac/users/roxandtol');
   });
 });

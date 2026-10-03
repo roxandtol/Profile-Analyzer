@@ -1,7 +1,9 @@
-import React from 'react';
-import { Target, ShieldAlert, Award, Layers } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Target, ShieldAlert, Award, Layers, ExternalLink } from 'lucide-react';
 import { VolforceVersion } from '../core/types';
+import { TachiServer } from '../api/tachiClient';
 import { getClassColor, vfToClass } from '../core/volforce';
+import { getKamaiUserPfpUrl, getKamaiUserUrl } from '../utils/tachiUrl';
 
 interface ProfileSummaryProps {
   username: string;
@@ -13,6 +15,7 @@ interface ProfileSummaryProps {
   version: VolforceVersion;
   levelDistribution: Record<number, number>;
   onTargetChange: (target: number) => void;
+  server?: TachiServer;
 }
 
 export const ProfileSummary: React.FC<ProfileSummaryProps> = ({
@@ -25,12 +28,21 @@ export const ProfileSummary: React.FC<ProfileSummaryProps> = ({
   version,
   levelDistribution,
   onTargetChange,
+  server,
 }) => {
   const currentBadgeColor = getClassColor(currentClass);
   const targetClass = vfToClass(targetVF);
   const targetBadgeColor = getClassColor(targetClass);
 
   const deltaNeeded = Math.max(0, targetVF - currentVF);
+
+  const [pfpError, setPfpError] = useState(false);
+  const pfpUrl = getKamaiUserPfpUrl(userID, server);
+  const profileUrl = getKamaiUserUrl(username, server);
+
+  useEffect(() => {
+    setPfpError(false);
+  }, [userID, server]);
 
   // Suggested Target Presets (strictly higher than currentVF)
   const ALL_CLASS_MILESTONES = [
@@ -83,12 +95,42 @@ export const ProfileSummary: React.FC<ProfileSummaryProps> = ({
         {/* Left Column: Player & Current VF */}
         <div className="lg:col-span-4 flex flex-col gap-2.5 sm:gap-3">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-[#161f33] border border-[#2b3a58] flex items-center justify-center text-base sm:text-xl font-bold text-sdvx-cyan shadow-inner shrink-0">
-              {username.slice(0, 2).toUpperCase()}
-            </div>
+            {/* Kamaitachi User Avatar */}
+            <a
+              href={profileUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              title={`View ${username}'s profile on Kamaitachi`}
+              className="group relative block shrink-0"
+            >
+              <div className="w-11 h-11 sm:w-14 sm:h-14 rounded-xl bg-[#161f33] border-2 border-[#2b3a58] group-hover:border-sdvx-cyan overflow-hidden flex items-center justify-center shadow-lg transition-all shrink-0">
+                {!pfpError ? (
+                  <img
+                    src={pfpUrl}
+                    alt={username}
+                    onError={() => setPfpError(true)}
+                    className="w-full h-full object-cover rounded-[10px]"
+                  />
+                ) : (
+                  <span className="text-base sm:text-xl font-bold text-sdvx-cyan">
+                    {username.slice(0, 2).toUpperCase()}
+                  </span>
+                )}
+              </div>
+            </a>
+
             <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <h1 className="text-base sm:text-xl font-black text-white truncate">{username}</h1>
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <a
+                  href={profileUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-base sm:text-xl font-black text-white hover:text-sdvx-cyan transition-colors truncate flex items-center gap-1 group"
+                  title="View profile on Kamaitachi"
+                >
+                  <span className="truncate">{username}</span>
+                  <ExternalLink className="w-3.5 h-3.5 text-gray-500 group-hover:text-sdvx-cyan transition-colors shrink-0" />
+                </a>
                 <span className="text-xs text-gray-500 font-mono shrink-0">#{userID}</span>
               </div>
               <div className="flex items-center gap-2 mt-0.5">

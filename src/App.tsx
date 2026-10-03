@@ -376,6 +376,7 @@ export const App: React.FC = () => {
               version={version}
               levelDistribution={analysis.levelDistribution}
               onTargetChange={(val) => setCustomTargetVF(val)}
+              server={server}
             />
 
             {/* Navigation Tabs Bar */}
