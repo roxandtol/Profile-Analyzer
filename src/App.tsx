@@ -15,6 +15,7 @@ import {
   KamaiChart,
   KamaiPB,
   KamaiSong,
+  KamaiUser,
   KamaiUserProfileResponse,
   RoadmapStep,
   RoadmapStepAlternative,
@@ -41,6 +42,7 @@ export const App: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   // Raw data from API
+  const [userAccount, setUserAccount] = useState<KamaiUser | null>(null);
   const [profile, setProfile] = useState<KamaiUserProfileResponse | null>(null);
   const [rawPBs, setRawPBs] = useState<KamaiPB[]>([]);
   const [rawCharts, setRawCharts] = useState<KamaiChart[]>([]);
@@ -74,9 +76,13 @@ export const App: React.FC = () => {
 
     try {
       localStorage.setItem('sdvx_username', targetUser);
-      const userProfile = await client.getUserProfile(targetUser);
-      const pbsResp = await client.getUserAllPBs(targetUser);
+      const [accountResp, userProfile, pbsResp] = await Promise.all([
+        client.getUser(targetUser).catch(() => null),
+        client.getUserProfile(targetUser),
+        client.getUserAllPBs(targetUser),
+      ]);
 
+      setUserAccount(accountResp);
       setProfile(userProfile);
       setRawPBs(pbsResp.pbs);
       setRawCharts(pbsResp.charts);
@@ -377,6 +383,8 @@ export const App: React.FC = () => {
               levelDistribution={analysis.levelDistribution}
               onTargetChange={(val) => setCustomTargetVF(val)}
               server={server}
+              customPfpLocation={userAccount?.customPfpLocation}
+              customBannerLocation={userAccount?.customBannerLocation}
             />
 
             {/* Navigation Tabs Bar */}

@@ -17,11 +17,32 @@ export function getKamaiSongUrl(songID: string, server: TachiServer = 'kamai'): 
 }
 
 /**
- * Returns the direct Kamaitachi / Bokutachi web URL for a user's avatar / profile picture.
+ * Returns the direct Kamaitachi / Bokutachi CDN web URL for a user's avatar / profile picture.
+ * Uses the CDN directly to avoid same-origin CORP restrictions on the API redirect endpoint.
  */
-export function getKamaiUserPfpUrl(userIDOrName: number | string, server: TachiServer = 'kamai'): string {
-  const base = server === 'boku' ? 'https://boku.tachi.ac' : 'https://kamai.tachi.ac';
-  return `${base}/api/v1/users/${encodeURIComponent(userIDOrName)}/pfp`;
+export function getKamaiUserPfpUrl(
+  userIDOrName: number | string,
+  customPfpLocation?: string | null,
+  server: TachiServer = 'kamai'
+): string {
+  const cdn = server === 'boku' ? 'https://cdn-boku.tachi.ac' : 'https://cdn-kamai.tachi.ac';
+  if (customPfpLocation) {
+    return `${cdn}/users/${encodeURIComponent(userIDOrName)}/pfp-${encodeURIComponent(customPfpLocation)}`;
+  }
+  return `${cdn}/users/default/pfp`;
+}
+
+/**
+ * Returns the direct Kamaitachi / Bokutachi CDN web URL for a user's banner if set.
+ */
+export function getKamaiUserBannerUrl(
+  userIDOrName: number | string,
+  customBannerLocation?: string | null,
+  server: TachiServer = 'kamai'
+): string | null {
+  if (!customBannerLocation) return null;
+  const cdn = server === 'boku' ? 'https://cdn-boku.tachi.ac' : 'https://cdn-kamai.tachi.ac';
+  return `${cdn}/users/${encodeURIComponent(userIDOrName)}/banner-${encodeURIComponent(customBannerLocation)}`;
 }
 
 /**

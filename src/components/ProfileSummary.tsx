@@ -3,7 +3,7 @@ import { Target, ShieldAlert, Award, Layers, ExternalLink } from 'lucide-react';
 import { VolforceVersion } from '../core/types';
 import { TachiServer } from '../api/tachiClient';
 import { getClassColor, vfToClass } from '../core/volforce';
-import { getKamaiUserPfpUrl, getKamaiUserUrl } from '../utils/tachiUrl';
+import { getKamaiUserPfpUrl, getKamaiUserBannerUrl, getKamaiUserUrl } from '../utils/tachiUrl';
 
 interface ProfileSummaryProps {
   username: string;
@@ -16,6 +16,8 @@ interface ProfileSummaryProps {
   levelDistribution: Record<number, number>;
   onTargetChange: (target: number) => void;
   server?: TachiServer;
+  customPfpLocation?: string | null;
+  customBannerLocation?: string | null;
 }
 
 export const ProfileSummary: React.FC<ProfileSummaryProps> = ({
@@ -29,6 +31,8 @@ export const ProfileSummary: React.FC<ProfileSummaryProps> = ({
   levelDistribution,
   onTargetChange,
   server,
+  customPfpLocation,
+  customBannerLocation,
 }) => {
   const currentBadgeColor = getClassColor(currentClass);
   const targetClass = vfToClass(targetVF);
@@ -37,12 +41,13 @@ export const ProfileSummary: React.FC<ProfileSummaryProps> = ({
   const deltaNeeded = Math.max(0, targetVF - currentVF);
 
   const [pfpError, setPfpError] = useState(false);
-  const pfpUrl = getKamaiUserPfpUrl(userID, server);
+  const pfpUrl = getKamaiUserPfpUrl(userID, customPfpLocation, server);
+  const bannerUrl = getKamaiUserBannerUrl(userID, customBannerLocation, server);
   const profileUrl = getKamaiUserUrl(username, server);
 
   useEffect(() => {
     setPfpError(false);
-  }, [userID, server]);
+  }, [userID, customPfpLocation, server]);
 
   // Suggested Target Presets (strictly higher than currentVF)
   const ALL_CLASS_MILESTONES = [
@@ -87,7 +92,13 @@ export const ProfileSummary: React.FC<ProfileSummaryProps> = ({
 
   return (
     <div className="bg-[#0f1422] border border-[#1f293d] rounded-2xl p-3.5 sm:p-6 shadow-xl relative overflow-hidden">
-      {/* Background glow decoration */}
+      {/* Background glow & banner decoration */}
+      {bannerUrl && (
+        <div
+          className="absolute inset-0 bg-cover bg-center opacity-15 pointer-events-none filter blur-sm scale-105"
+          style={{ backgroundImage: `url(${bannerUrl})` }}
+        />
+      )}
       <div className="absolute -right-20 -top-20 w-64 h-64 bg-sdvx-accent/10 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute -left-20 -bottom-20 w-64 h-64 bg-sdvx-cyan/10 rounded-full blur-3xl pointer-events-none" />
 

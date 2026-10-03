@@ -3,6 +3,7 @@ import {
   KamaiFolderResponse,
   KamaiPBsResponse,
   KamaiSong,
+  KamaiUser,
   KamaiUserProfileResponse,
 } from '../core/types';
 
@@ -111,6 +112,16 @@ export class TachiClient {
     }
 
     return body;
+  }
+
+  /**
+   * Fetch general user account details (including custom avatar & banner location).
+   */
+  async getUser(usernameOrId: string): Promise<KamaiUser> {
+    return this.fetchApi<KamaiUser>(
+      `/users/${encodeURIComponent(usernameOrId)}`,
+      { useCache: true, cacheTtlMs: 10 * 60 * 1000 }, // 10 minutes
+    );
   }
 
   /**

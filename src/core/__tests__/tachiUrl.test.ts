@@ -23,11 +23,14 @@ describe('Kamaitachi URL Generator', () => {
   });
 
   it('generates correct user pfp URLs', () => {
-    const kamaiPfp = getKamaiUserPfpUrl(1136, 'kamai');
-    expect(kamaiPfp).toBe('https://kamai.tachi.ac/api/v1/users/1136/pfp');
+    const defaultPfp = getKamaiUserPfpUrl(1136, null, 'kamai');
+    expect(defaultPfp).toBe('https://cdn-kamai.tachi.ac/users/default/pfp');
 
-    const bokuPfp = getKamaiUserPfpUrl('roxandtol', 'boku');
-    expect(bokuPfp).toBe('https://boku.tachi.ac/api/v1/users/roxandtol/pfp');
+    const customPfp = getKamaiUserPfpUrl(1136, 'a2d1db9d9f1b', 'kamai');
+    expect(customPfp).toBe('https://cdn-kamai.tachi.ac/users/1136/pfp-a2d1db9d9f1b');
+
+    const bokuCustomPfp = getKamaiUserPfpUrl('roxandtol', 'hash123', 'boku');
+    expect(bokuCustomPfp).toBe('https://cdn-boku.tachi.ac/users/roxandtol/pfp-hash123');
   });
 
   it('generates correct user profile web URLs', () => {

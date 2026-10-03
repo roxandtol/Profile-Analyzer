@@ -125,6 +125,16 @@ export interface KamaiUserStats {
   };
 }
 
+export interface KamaiUser {
+  id: number;
+  username: string;
+  usernameLowercase?: string;
+  customPfpLocation?: string | null;
+  customBannerLocation?: string | null;
+  about?: string;
+  [key: string]: any;
+}
+
 export interface KamaiUserProfileResponse {
   gameStats: KamaiUserStats;
   totalScores?: number;
