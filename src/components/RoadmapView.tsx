@@ -20,7 +20,6 @@ import {
   SDVXLamp,
   VolforceVersion,
 } from '../core/types';
-import { TachiServer } from '../api/tachiClient';
 import { getDifficultyBadgeColor, getFeasibilityBadgeColor, getLampBadgeColor } from '../utils/colors';
 import { formatChartLevel } from '../utils/format';
 import { getKamaiChartUrl } from '../utils/tachiUrl';
@@ -32,7 +31,6 @@ interface RoadmapViewProps {
   version: VolforceVersion;
   strategy: RoadmapStrategy;
   targetLamp?: SDVXLamp;
-  server?: TachiServer;
   onStrategyChange: (strategy: RoadmapStrategy) => void;
   onTargetLampChange?: (lamp: SDVXLamp) => void;
   onChangeStepLamp?: (stepNumber: number, lamp: SDVXLamp) => void;
@@ -116,7 +114,6 @@ export const RoadmapView: React.FC<RoadmapViewProps> = ({
   version,
   strategy,
   targetLamp = 'EXCESSIVE CLEAR',
-  server = 'kamai',
   onStrategyChange,
   onTargetLampChange,
   onChangeStepLamp,
@@ -392,7 +389,7 @@ export const RoadmapView: React.FC<RoadmapViewProps> = ({
                       {step.chart.difficulty} {formatChartLevel(step.chart.levelNum, version)}
                     </span>
                     <a
-                      href={getKamaiChartUrl(step.chart.chartID, server)}
+                      href={getKamaiChartUrl(step.chart.chartID)}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-xs sm:text-sm font-bold text-white hover:text-sdvx-cyan transition-colors flex items-center gap-1.5 group break-all"
@@ -541,7 +538,7 @@ export const RoadmapView: React.FC<RoadmapViewProps> = ({
                                   </span>
                                   <div>
                                     <a
-                                      href={getKamaiChartUrl(alt.chart.chartID, server)}
+                                      href={getKamaiChartUrl(alt.chart.chartID)}
                                       target="_blank"
                                       rel="noopener noreferrer"
                                       className="text-xs font-bold text-white hover:text-sdvx-cyan transition-colors flex items-center gap-1 group"

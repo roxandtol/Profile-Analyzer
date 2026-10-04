@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Target, ShieldAlert, Award, Layers, ExternalLink } from 'lucide-react';
 import { VolforceVersion } from '../core/types';
-import { TachiServer } from '../api/tachiClient';
 import { getClassColor, vfToClass } from '../core/volforce';
 import { getKamaiUserPfpUrl, getKamaiUserBannerUrl, getKamaiUserUrl } from '../utils/tachiUrl';
 
@@ -15,7 +14,6 @@ interface ProfileSummaryProps {
   version: VolforceVersion;
   levelDistribution: Record<number, number>;
   onTargetChange: (target: number) => void;
-  server?: TachiServer;
   customPfpLocation?: string | null;
   customBannerLocation?: string | null;
 }
@@ -30,7 +28,6 @@ export const ProfileSummary: React.FC<ProfileSummaryProps> = ({
   version,
   levelDistribution,
   onTargetChange,
-  server,
   customPfpLocation,
   customBannerLocation,
 }) => {
@@ -41,13 +38,13 @@ export const ProfileSummary: React.FC<ProfileSummaryProps> = ({
   const deltaNeeded = Math.max(0, targetVF - currentVF);
 
   const [pfpError, setPfpError] = useState(false);
-  const pfpUrl = getKamaiUserPfpUrl(userID, customPfpLocation, server);
-  const bannerUrl = getKamaiUserBannerUrl(userID, customBannerLocation, server);
-  const profileUrl = getKamaiUserUrl(username, server);
+  const pfpUrl = getKamaiUserPfpUrl(userID, customPfpLocation);
+  const bannerUrl = getKamaiUserBannerUrl(userID, customBannerLocation);
+  const profileUrl = getKamaiUserUrl(username);
 
   useEffect(() => {
     setPfpError(false);
-  }, [userID, customPfpLocation, server]);
+  }, [userID, customPfpLocation]);
 
   // Suggested Target Presets (strictly higher than currentVF)
   const ALL_CLASS_MILESTONES = [

@@ -1,7 +1,6 @@
 import React from 'react';
 import { ShieldAlert, ExternalLink } from 'lucide-react';
 import { AnalyzedScore, VolforceVersion } from '../core/types';
-import { TachiServer } from '../api/tachiClient';
 import { getDifficultyBadgeColor, getGradeBadgeColor, getLampBadgeColor } from '../utils/colors';
 import { formatChartLevel } from '../utils/format';
 import { getKamaiChartUrl } from '../utils/tachiUrl';
@@ -10,10 +9,9 @@ interface Top50TabProps {
   top50Scores: AnalyzedScore[];
   version: VolforceVersion;
   cutoff: number;
-  server?: TachiServer;
 }
 
-export const Top50Tab: React.FC<Top50TabProps> = ({ top50Scores, version, cutoff, server }) => {
+export const Top50Tab: React.FC<Top50TabProps> = ({ top50Scores, version, cutoff }) => {
   return (
     <div className="space-y-4">
       {/* Intro Box */}
@@ -77,7 +75,7 @@ export const Top50Tab: React.FC<Top50TabProps> = ({ top50Scores, version, cutoff
               {/* Title & Artist */}
               <div>
                 <a
-                  href={getKamaiChartUrl(s.chart.chartID, server)}
+                  href={getKamaiChartUrl(s.chart.chartID)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="font-bold text-white text-xs hover:text-sdvx-cyan transition-colors flex items-center gap-1 group"
@@ -162,7 +160,7 @@ export const Top50Tab: React.FC<Top50TabProps> = ({ top50Scores, version, cutoff
                         </span>
                         <div className="min-w-0">
                           <a
-                            href={getKamaiChartUrl(s.chart.chartID, server)}
+                            href={getKamaiChartUrl(s.chart.chartID)}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="font-bold text-white text-xs hover:text-sdvx-cyan transition-colors flex items-center gap-1 group"

@@ -6,7 +6,7 @@ import { UpscoresTab } from './components/UpscoresTab';
 import { FarmableTab } from './components/FarmableTab';
 import { Top50Tab } from './components/Top50Tab';
 import { ExportModal } from './components/ExportModal';
-import { TachiClient, TachiServer } from './api/tachiClient';
+import { TachiClient } from './api/tachiClient';
 import { analyzeProfile, AnalyzerResult } from './core/analyzer';
 import { findFarmables, getDefaultLevelRange } from './core/farmable';
 import { generateRoadmap } from './core/roadmap';
@@ -31,12 +31,8 @@ export const App: React.FC = () => {
   const [username, setUsername] = useState<string>(() => {
     return localStorage.getItem('sdvx_username') || 'zkldi';
   });
-  const [server, setServer] = useState<TachiServer>('kamai');
   const [version, setVersion] = useState<VolforceVersion>('vf7');
   const [konasteOnly, setKonasteOnly] = useState<boolean>(false);
-  const [apiKey, setApiKey] = useState<string>(() => {
-    return localStorage.getItem('tachi_api_key') || '';
-  });
 
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -60,8 +56,8 @@ export const App: React.FC = () => {
   const [showExportModal, setShowExportModal] = useState<boolean>(false);
 
   const client = useMemo(() => {
-    return new TachiClient({ server, apiKey: apiKey || undefined });
-  }, [server, apiKey]);
+    return new TachiClient();
+  }, []);
 
   const versionFilter: GameVersionFilter = useMemo(
     () => (version === 'vf6' ? (konasteOnly ? 'konaste' : 'exceed') : 'all'),
@@ -120,12 +116,7 @@ export const App: React.FC = () => {
 
   useEffect(() => {
     loadUserData(username);
-  }, [server, version, konasteOnly]);
-
-  const handleApiKeySave = (key: string) => {
-    setApiKey(key);
-    localStorage.setItem('tachi_api_key', key);
-  };
+  }, [version, konasteOnly]);
 
   // Perform Analysis
   const analysis: AnalyzerResult | null = useMemo(() => {
@@ -332,19 +323,15 @@ export const App: React.FC = () => {
     <div className="min-h-screen flex flex-col">
       <Header
         username={username}
-        server={server}
         version={version}
-        apiKey={apiKey}
         loading={loading}
         konasteOnly={konasteOnly}
         onSearch={(user) => {
           setUsername(user);
           loadUserData(user);
         }}
-        onServerChange={setServer}
         onVersionChange={setVersion}
         onKonasteToggle={setKonasteOnly}
-        onApiKeySave={handleApiKeySave}
       />
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8 space-y-5 sm:space-y-8">
@@ -382,7 +369,6 @@ export const App: React.FC = () => {
               version={version}
               levelDistribution={analysis.levelDistribution}
               onTargetChange={(val) => setCustomTargetVF(val)}
-              server={server}
               customPfpLocation={userAccount?.customPfpLocation}
               customBannerLocation={userAccount?.customBannerLocation}
             />
@@ -468,7 +454,6 @@ export const App: React.FC = () => {
                 version={version}
                 strategy={roadmapStrategy}
                 targetLamp={roadmapTargetLamp}
-                server={server}
                 onStrategyChange={handleStrategyChange}
                 onTargetLampChange={handleTargetLampChange}
                 onChangeStepLamp={handleChangeStepLamp}
@@ -479,11 +464,11 @@ export const App: React.FC = () => {
             )}
 
             {activeTab === 'upscores' && (
-              <UpscoresTab upscores={activeUpscores} version={version} server={server} />
+              <UpscoresTab upscores={activeUpscores} version={version} />
             )}
 
             {activeTab === 'farmable' && (
-              <FarmableTab farmables={farmables} version={version} server={server} />
+              <FarmableTab farmables={farmables} version={version} />
             )}
 
             {activeTab === 'top50' && (
@@ -491,7 +476,6 @@ export const App: React.FC = () => {
                 top50Scores={analysis.top50Scores}
                 version={version}
                 cutoff={analysis.top50Cutoff}
-                server={server}
               />
             )}
 
@@ -504,7 +488,6 @@ export const App: React.FC = () => {
               targetVF={targetVF}
               version={version}
               steps={roadmapSteps}
-              server={server}
             />
           </>
         )}

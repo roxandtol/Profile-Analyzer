@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Search, CheckSquare, Square, AlertTriangle, Sparkles, ArrowDown, ArrowUp, ArrowUpDown, ExternalLink } from 'lucide-react';
 import { FarmableOpportunity, VolforceVersion } from '../core/types';
-import { TachiServer } from '../api/tachiClient';
 import { getDifficultyBadgeColor, getFeasibilityBadgeColor } from '../utils/colors';
 import { formatChartLevel } from '../utils/format';
 import { getKamaiChartUrl } from '../utils/tachiUrl';
@@ -9,13 +8,12 @@ import { getKamaiChartUrl } from '../utils/tachiUrl';
 interface FarmableTabProps {
   farmables: FarmableOpportunity[];
   version: VolforceVersion;
-  server?: TachiServer;
 }
 
 export type FarmableSortKey = 'gain' | 'feasibility' | 'diff';
 export type SortDirection = 'desc' | 'asc';
 
-export const FarmableTab: React.FC<FarmableTabProps> = ({ farmables, version, server }) => {
+export const FarmableTab: React.FC<FarmableTabProps> = ({ farmables, version }) => {
   const [search, setSearch] = useState<string>('');
   const [selectedLevel, setSelectedLevel] = useState<number | 'all'>('all');
   const [hideGimmicks, setHideGimmicks] = useState<boolean>(false);
@@ -248,7 +246,7 @@ export const FarmableTab: React.FC<FarmableTabProps> = ({ farmables, version, se
                 {/* Song Title & Artist */}
                 <div>
                   <a
-                    href={getKamaiChartUrl(f.chart.chartID, server)}
+                    href={getKamaiChartUrl(f.chart.chartID)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="font-bold text-white text-xs hover:text-sdvx-cyan transition-colors flex items-center gap-1 group"
@@ -393,7 +391,7 @@ export const FarmableTab: React.FC<FarmableTabProps> = ({ farmables, version, se
                           </span>
                           <div className="min-w-0">
                             <a
-                              href={getKamaiChartUrl(f.chart.chartID, server)}
+                              href={getKamaiChartUrl(f.chart.chartID)}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="font-bold text-white text-xs hover:text-sdvx-cyan transition-colors flex items-center gap-1 group"

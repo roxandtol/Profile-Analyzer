@@ -1,4 +1,4 @@
-import { TachiClient, TachiServer } from './api/tachiClient';
+import { TachiClient } from './api/tachiClient';
 import { analyzeProfile } from './core/analyzer';
 import { findFarmables } from './core/farmable';
 import { generateRoadmap } from './core/roadmap';
@@ -15,8 +15,6 @@ interface CliArgs {
   strategy: RoadmapStrategy;
   lamp?: any;
   minFeasibility: number;
-  server: TachiServer;
-  apiKey?: string;
   levels?: number[];
 }
 
@@ -24,7 +22,6 @@ function parseArgs(): CliArgs {
   const args = process.argv.slice(2);
   const result: CliArgs = {
     version: 'vf7',
-    server: 'kamai',
     konaste: false,
     strategy: 'most-feasible',
     lamp: 'EXCESSIVE CLEAR',
@@ -58,11 +55,6 @@ function parseArgs(): CliArgs {
       }
     } else if (arg === '--konaste') {
       result.konaste = true;
-    } else if (arg === '--server' || arg === '-s') {
-      const s = args[++i]?.toLowerCase();
-      result.server = s === 'boku' ? 'boku' : 'kamai';
-    } else if (arg === '--key' || arg === '-k') {
-      result.apiKey = args[++i];
     } else if (arg === '--levels' || arg === '-l') {
       result.levels = args[++i]?.split(',').map((x) => parseInt(x.trim(), 10));
     }
@@ -90,19 +82,12 @@ async function main() {
     process.exit(1);
   }
 
-  const client = new TachiClient({
-    server: args.server,
-    apiKey: args.apiKey,
-  });
+  const client = new TachiClient();
 
   const versionFilter: GameVersionFilter =
     args.version === 'vf6' ? (args.konaste ? 'konaste' : 'exceed') : 'all';
 
-  console.log(
-    `📡 Fetching data for user '${args.user}' from ${
-      args.server === 'boku' ? 'Bokutachi' : 'Kamaitachi'
-    }...`,
-  );
+  console.log(`📡 Fetching data for user '${args.user}' from Kamaitachi...`);
 
   try {
     const profile = await client.getUserProfile(args.user);
@@ -256,7 +241,7 @@ async function main() {
         const prog = `Running: ${step.cumulativeProfileVF.toFixed(3)} / ${targetVF.toFixed(3)}`;
         console.log(`  ${num} ${type} ${title} ${diff} ${gain} | ${feas}${prog}`);
         console.log(`      💡 ${step.rationale}`);
-        console.log(`      🔗 ${getKamaiChartUrl(step.chart.chartID, args.server)}`);
+        console.log(`      🔗 ${getKamaiChartUrl(step.chart.chartID)}`);
         if (step.alternatives && step.alternatives.length > 0) {
           const altList = step.alternatives
             .map(

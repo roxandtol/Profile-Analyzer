@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Search, ArrowDown, ArrowUp, ArrowUpDown, CheckSquare, Square, ExternalLink } from 'lucide-react';
 import { UpscoreOpportunity, VolforceVersion } from '../core/types';
-import { TachiServer } from '../api/tachiClient';
 import { getDifficultyBadgeColor, getLampBadgeColor, getFeasibilityBadgeColor } from '../utils/colors';
 import { formatChartLevel } from '../utils/format';
 import { getKamaiChartUrl } from '../utils/tachiUrl';
@@ -9,13 +8,12 @@ import { getKamaiChartUrl } from '../utils/tachiUrl';
 interface UpscoresTabProps {
   upscores: UpscoreOpportunity[];
   version: VolforceVersion;
-  server?: TachiServer;
 }
 
 export type UpscoreSortKey = 'gain' | 'feasibility' | 'diff';
 export type SortDirection = 'desc' | 'asc';
 
-export const UpscoresTab: React.FC<UpscoresTabProps> = ({ upscores, version, server }) => {
+export const UpscoresTab: React.FC<UpscoresTabProps> = ({ upscores, version }) => {
   const [filterCategory, setFilterCategory] = useState<string>('all');
   const [search, setSearch] = useState<string>('');
   const [selectedLevel, setSelectedLevel] = useState<number | 'all'>('all');
@@ -235,7 +233,7 @@ export const UpscoresTab: React.FC<UpscoresTabProps> = ({ upscores, version, ser
                 {/* Song Title & Artist */}
                 <div>
                   <a
-                    href={getKamaiChartUrl(u.chart.chartID, server)}
+                    href={getKamaiChartUrl(u.chart.chartID)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="font-bold text-white text-xs hover:text-sdvx-cyan transition-colors flex items-center gap-1 group"
@@ -394,7 +392,7 @@ export const UpscoresTab: React.FC<UpscoresTabProps> = ({ upscores, version, ser
                           </span>
                           <div className="min-w-0">
                             <a
-                              href={getKamaiChartUrl(u.chart.chartID, server)}
+                              href={getKamaiChartUrl(u.chart.chartID)}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="font-bold text-white text-xs hover:text-sdvx-cyan transition-colors flex items-center gap-1 group"

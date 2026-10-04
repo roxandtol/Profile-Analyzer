@@ -1,49 +1,33 @@
 import React, { useState } from 'react';
-import { Search, Settings, Zap, Database, Key, Monitor, Gamepad2 } from 'lucide-react';
-import { TachiServer } from '../api/tachiClient';
+import { Search, Zap, Monitor, Gamepad2 } from 'lucide-react';
 import { VolforceVersion } from '../core/types';
 
 interface HeaderProps {
   username: string;
-  server: TachiServer;
   version: VolforceVersion;
-  apiKey?: string;
   loading: boolean;
   konasteOnly: boolean;
   onSearch: (user: string) => void;
-  onServerChange: (server: TachiServer) => void;
   onVersionChange: (version: VolforceVersion) => void;
   onKonasteToggle: (konasteOnly: boolean) => void;
-  onApiKeySave: (key: string) => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
   username,
-  server,
   version,
-  apiKey,
   loading,
   konasteOnly,
   onSearch,
-  onServerChange,
   onVersionChange,
   onKonasteToggle,
-  onApiKeySave,
 }) => {
   const [inputUser, setInputUser] = useState(username);
-  const [showSettings, setShowSettings] = useState(false);
-  const [inputKey, setInputKey] = useState(apiKey || '');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (inputUser.trim()) {
       onSearch(inputUser.trim());
     }
-  };
-
-  const handleKeySave = () => {
-    onApiKeySave(inputKey.trim());
-    setShowSettings(false);
   };
 
   return (
@@ -112,20 +96,6 @@ export const Header: React.FC<HeaderProps> = ({
                 {konasteOnly ? <Monitor className="w-4 h-4 text-purple-400" /> : <Gamepad2 className="w-4 h-4 text-amber-400" />}
               </button>
             )}
-
-            {/* Settings button on mobile */}
-            <button
-              type="button"
-              onClick={() => setShowSettings(!showSettings)}
-              className={`p-1.5 rounded-lg border transition-colors relative ${
-                apiKey
-                  ? 'border-emerald-500/50 bg-emerald-500/10 text-emerald-400'
-                  : 'border-[#202b40] bg-[#121826] text-gray-400'
-              }`}
-            >
-              <Settings className="w-4 h-4" />
-              {apiKey && <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 absolute top-1 right-1" />}
-            </button>
           </div>
         </div>
 
@@ -199,75 +169,8 @@ export const Header: React.FC<HeaderProps> = ({
               VF6 (Exceed)
             </button>
           </div>
-
-          {/* Settings / API Key Button */}
-          <button
-            onClick={() => setShowSettings(!showSettings)}
-            className={`p-2 rounded-lg border transition-colors relative ${
-              apiKey
-                ? 'border-emerald-500/50 bg-emerald-500/10 text-emerald-400'
-                : 'border-[#202b40] bg-[#121826] text-gray-400 hover:text-white'
-            }`}
-            title="Settings & API Key"
-          >
-            <Settings className="w-4 h-4" />
-            {apiKey && (
-              <span className="w-2 h-2 rounded-full bg-emerald-400 absolute top-1 right-1" />
-            )}
-          </button>
         </div>
       </div>
-
-      {/* Settings Modal Drawer */}
-      {showSettings && (
-        <div className="border-t border-[#1c2438] bg-[#0f1422] p-4 text-xs">
-          <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <Database className="w-4 h-4 text-sdvx-cyan" />
-              <span className="font-semibold text-gray-300">Server:</span>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => onServerChange('kamai')}
-                  className={`px-3 py-1 rounded border text-xs ${
-                    server === 'kamai'
-                      ? 'border-sdvx-cyan bg-sdvx-cyan/10 text-sdvx-cyan font-bold'
-                      : 'border-gray-700 text-gray-400 hover:text-white'
-                  }`}
-                >
-                  Kamaitachi (Official)
-                </button>
-                <button
-                  onClick={() => onServerChange('boku')}
-                  className={`px-3 py-1 rounded border text-xs ${
-                    server === 'boku'
-                      ? 'border-sdvx-cyan bg-sdvx-cyan/10 text-sdvx-cyan font-bold'
-                      : 'border-gray-700 text-gray-400 hover:text-white'
-                  }`}
-                >
-                  Bokutachi
-                </button>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 flex-1 max-w-md">
-              <Key className="w-4 h-4 text-sdvx-accent" />
-              <input
-                type="password"
-                placeholder="Optional API Token (for private profiles)"
-                value={inputKey}
-                onChange={(e) => setInputKey(e.target.value)}
-                className="flex-1 bg-[#151c2e] border border-gray-700 rounded px-3 py-1 text-gray-200 text-xs focus:outline-none focus:border-sdvx-accent"
-              />
-              <button
-                onClick={handleKeySave}
-                className="px-3 py-1 bg-sdvx-accent text-white rounded font-medium hover:bg-pink-600 transition-colors"
-              >
-                Save
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </header>
   );
 };

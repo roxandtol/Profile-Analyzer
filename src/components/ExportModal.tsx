@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { X, Copy, Check, Download, FileText } from 'lucide-react';
 import { RoadmapStep, VolforceVersion } from '../core/types';
-import { TachiServer } from '../api/tachiClient';
 import { formatChartLevel } from '../utils/format';
 import { getKamaiChartUrl } from '../utils/tachiUrl';
 
@@ -13,7 +12,6 @@ interface ExportModalProps {
   targetVF: number;
   version: VolforceVersion;
   steps: RoadmapStep[];
-  server?: TachiServer;
 }
 
 export const ExportModal: React.FC<ExportModalProps> = ({
@@ -24,7 +22,6 @@ export const ExportModal: React.FC<ExportModalProps> = ({
   targetVF,
   version,
   steps,
-  server,
 }) => {
   const [copied, setCopied] = useState(false);
   const [format, setFormat] = useState<'markdown' | 'text'>('markdown');
@@ -44,7 +41,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
       const targetStr = `${s.targetScore.toLocaleString()} (${s.targetLamp})`;
       const currStr = s.currentScore ? `Current: ${s.currentScore.toLocaleString()} -> ` : '';
       const feasStr = s.feasibility ? ` [Feasibility: ${s.feasibility.feasibilityPercent}%]` : '';
-      const chartUrl = getKamaiChartUrl(s.chart.chartID, server);
+      const chartUrl = getKamaiChartUrl(s.chart.chartID);
       md += `- [ ] **#${s.stepNumber} [${type}]** [${s.song.title}](${chartUrl}) [${s.chart.difficulty} ${formatChartLevel(s.chart.levelNum, version)}]${feasStr}\n`;
       md += `  - Goal: ${currStr}${targetStr} | Net Gain: +${s.netVFGain.toFixed(3)} VF (Running: ${s.cumulativeProfileVF.toFixed(3)})\n`;
       md += `  - *Tip*: ${s.rationale}\n`;
@@ -60,7 +57,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
     for (const s of steps) {
       const type = s.type === 'upscore' ? 'UP' : 'FARM';
       const feasStr = s.feasibility ? ` (${s.feasibility.feasibilityPercent}% feas)` : '';
-      const chartUrl = getKamaiChartUrl(s.chart.chartID, server);
+      const chartUrl = getKamaiChartUrl(s.chart.chartID);
       txt += `[ ] #${s.stepNumber} [${type}] ${s.song.title} [${s.chart.difficulty} ${formatChartLevel(s.chart.levelNum, version)}]${feasStr}\n`;
       txt += `    Target: ${s.targetScore.toLocaleString()} | +${s.netVFGain.toFixed(3)} VF -> Running: ${s.cumulativeProfileVF.toFixed(3)}\n`;
       txt += `    Kamaitachi: ${chartUrl}\n`;

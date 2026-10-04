@@ -7,17 +7,7 @@ import {
   KamaiUserProfileResponse,
 } from '../core/types';
 
-export type TachiServer = 'kamai' | 'boku';
-
-export interface TachiClientConfig {
-  server?: TachiServer;
-  apiKey?: string;
-}
-
-const SERVER_BASE_URLS: Record<TachiServer, string> = {
-  kamai: 'https://kamai.tachi.ac/api/v1',
-  boku: 'https://boku.tachi.ac/api/v1',
-};
+export const KAMAITACHI_API_BASE = 'https://kamai.tachi.ac/api/v1';
 
 // Memory cache fallback for CLI or browser
 const MEMORY_CACHE = new Map<string, { data: any; expiry: number }>();
@@ -62,14 +52,7 @@ function setCached(key: string, data: any, ttlMs: number): void {
 }
 
 export class TachiClient {
-  private baseUrl: string;
-  private apiKey?: string;
-
-  constructor(config: TachiClientConfig = {}) {
-    const server = config.server || 'kamai';
-    this.baseUrl = SERVER_BASE_URLS[server] || SERVER_BASE_URLS.kamai;
-    this.apiKey = config.apiKey;
-  }
+  private baseUrl = KAMAITACHI_API_BASE;
 
   private async fetchApi<T>(path: string, options: { useCache?: boolean; cacheTtlMs?: number } = {}): Promise<T> {
     const cacheKey = `${this.baseUrl}${path}`;
@@ -82,10 +65,6 @@ export class TachiClient {
       'Content-Type': 'application/json',
     };
 
-    if (this.apiKey) {
-      headers['Authorization'] = `Bearer ${this.apiKey}`;
-    }
-
     const res = await fetch(`${this.baseUrl}${path}`, { headers });
 
     if (!res.ok) {
@@ -93,9 +72,7 @@ export class TachiClient {
         throw new Error(`Resource not found (404) at ${path}. Please check the username/id.`);
       }
       if (res.status === 401 || res.status === 403) {
-        throw new Error(
-          `Unauthorized (403/401). If this profile is private, please provide a Kamaitachi API token.`,
-        );
+        throw new Error('Access denied (401/403) from Kamaitachi API.');
       }
       throw new Error(`API error HTTP ${res.status}: ${res.statusText}`);
     }
