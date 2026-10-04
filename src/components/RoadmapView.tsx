@@ -261,6 +261,16 @@ export const RoadmapView: React.FC<RoadmapViewProps> = ({
               <span className="px-2 py-0.5 rounded text-[11px] font-mono bg-sdvx-cyan/10 border border-sdvx-cyan/30 text-sdvx-cyan font-bold">
                 {displayedSteps.length} Steps
               </span>
+              {(steps as any).feasibleCount !== undefined && (
+                <span className="px-2 py-0.5 rounded text-[11px] font-mono bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-bold" title="Number of highly feasible goals maximized in this roadmap">
+                  {(steps as any).feasibleCount} Feasible
+                </span>
+              )}
+              {(steps as any).higherStuffCount !== undefined && (steps as any).higherStuffCount > 0 && (
+                <span className="px-2 py-0.5 rounded text-[11px] font-mono bg-purple-500/15 border border-purple-500/30 text-purple-300 font-bold" title="High-yield milestone pushers added to bridge the remaining gap to target Volforce">
+                  +{(steps as any).higherStuffCount} Pushers
+                </span>
+              )}
               <button
                 onClick={() => setHideLowFeasibility(!hideLowFeasibility)}
                 className={`ml-2 px-2.5 py-0.5 rounded text-[11px] font-mono font-medium flex items-center gap-1.5 border transition-all ${
@@ -372,15 +382,21 @@ export const RoadmapView: React.FC<RoadmapViewProps> = ({
                       #{step.stepNumber}
                     </span>
 
-                    <span
-                      className={`px-1.5 sm:px-2 py-0.5 rounded text-[9px] sm:text-[10px] font-black uppercase tracking-wider border ${
-                        step.type === 'upscore'
-                          ? 'bg-amber-500/10 text-amber-400 border-amber-500/30'
-                          : 'bg-sdvx-cyan/10 text-sdvx-cyan border-sdvx-cyan/30'
-                      }`}
-                    >
-                      {step.type}
-                    </span>
+                    {step.isHigherStuff ? (
+                      <span className="px-1.5 sm:px-2 py-0.5 rounded text-[9px] sm:text-[10px] font-mono font-bold uppercase tracking-wider bg-purple-500/20 text-purple-300 border border-purple-500/40">
+                        Target Pusher
+                      </span>
+                    ) : (
+                      <span
+                        className={`px-1.5 sm:px-2 py-0.5 rounded text-[9px] sm:text-[10px] font-black uppercase tracking-wider border ${
+                          step.type === 'upscore'
+                            ? 'bg-amber-500/10 text-amber-400 border-amber-500/30'
+                            : 'bg-sdvx-cyan/10 text-sdvx-cyan border-sdvx-cyan/30'
+                        }`}
+                      >
+                        {step.type}
+                      </span>
+                    )}
 
                     {feasBadge && step.feasibility && (
                       <span

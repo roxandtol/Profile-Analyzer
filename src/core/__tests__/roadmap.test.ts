@@ -336,7 +336,8 @@ describe('Roadmap Generator Strategies & Feasibility Priority', () => {
 
     expect(roadmap.wasStrategyChanged).toBe(true);
     expect(roadmap.targetReached).toBe(true);
-    expect(roadmap.strategyUsed).not.toBe('most-feasible');
+    expect(roadmap.feasibleCount).toBeGreaterThan(30); // Maximized feasible stuff!
+    expect(roadmap.higherStuffCount).toBeGreaterThan(0); // Filled gap with higher stuff!
     expect(roadmap[roadmap.length - 1].cumulativeProfileVF).toBeGreaterThanOrEqual(17.200);
     expect(roadmap.length).toBeLessThanOrEqual(50);
   });

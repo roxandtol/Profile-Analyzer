@@ -269,6 +269,7 @@ export interface RoadmapStep {
   strategyUsed?: RoadmapStrategy;
   strategyAdjusted?: boolean;
   strategyAdjustmentReason?: string;
+  isHigherStuff?: boolean;
 }
 
 export type RoadmapStepList = RoadmapStep[] & {
@@ -278,6 +279,8 @@ export type RoadmapStepList = RoadmapStep[] & {
   strategyChangeReason?: string;
   effectiveLamp?: SDVXLamp;
   targetReached?: boolean;
+  feasibleCount?: number;
+  higherStuffCount?: number;
 };
 
 export interface ProfilePlan {

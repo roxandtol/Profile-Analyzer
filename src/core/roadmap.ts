@@ -28,6 +28,7 @@ interface CandidateItem {
   feasibility?: any;
   feasibilityPercent: number;
   isQuickWin?: boolean;
+  isHigherStuff?: boolean;
 }
 
 export const MAX_ROADMAP_STEPS = 50;
@@ -182,7 +183,6 @@ function sortCandidates(candidates: CandidateItem[], strategy: RoadmapStrategy):
       return b.feasibilityPercent - a.feasibilityPercent || b.netVFGain - a.netVFGain;
     }
 
-    // Default / farmables-only
     return b.feasibilityPercent - a.feasibilityPercent || b.netVFGain - a.netVFGain;
   });
 }
@@ -222,7 +222,6 @@ function assembleSteps(
     const cand = selectedCandidates[i];
     currentCumulative = Math.round((currentCumulative + cand.netVFGain) * 1000) / 1000;
 
-    // Find up to 3 suitable alternatives of similar level and feasibility
     const alternatives: RoadmapStepAlternative[] = unusedCandidates
       .filter((alt) => {
         const levelDelta = Math.abs(Math.floor(alt.levelNum) - Math.floor(cand.levelNum));
@@ -294,6 +293,234 @@ function tryGeneratePlan(
   return assembleSteps(candidates, currentVF, targetVF, maxSteps, minFeasibility);
 }
 
+/**
+ * Core Blending Algorithm:
+ * "Always try to maximize the feasible stuff until it doesn't work, then maximize with the higher stuff"
+ *
+ * Evaluates candidate counts m from maxSteps down to 0:
+ * Finds the maximum number of feasible charts (m) that can be included
+ * while filling remaining (maxSteps - m) slots with highest-yield charts to reach targetVF.
+ */
+function maximizeFeasibleWithHigherStuff(
+  currentVF: number,
+  targetVF: number,
+  upscores: UpscoreOpportunity[],
+  farmables: FarmableOpportunity[],
+  version: VolforceVersion,
+  strategy: RoadmapStrategy,
+  targetLamp: SDVXLamp,
+  minFeasibility: number,
+  maxSteps: number = MAX_ROADMAP_STEPS,
+): RoadmapStepList {
+  const stepLimit = Math.max(1, maxSteps);
+
+  // Helper to attempt blending with a specific higher-stuff lamp and feasibility gate
+  function tryBlend(lamp: SDVXLamp, feasCutoff: number) {
+    // 1. Feasible Pool: high confidence, accessible, quick wins
+    const allFeasible = buildCandidates(upscores, farmables, version, strategy, targetLamp, feasCutoff);
+    const feasiblePool = sortCandidates(
+      allFeasible.filter((c) => c.feasibilityPercent >= 45 || c.isQuickWin),
+      'most-feasible',
+    );
+
+    // 2. Higher Pool: maximized for net VF gain to bridge any remaining gap
+    const allHigher = buildCandidates(upscores, farmables, version, strategy, lamp, 0);
+    const higherPool = sortCandidates(allHigher, 'fastest');
+
+    let bestBlend: {
+      steps: CandidateItem[];
+      finalVF: number;
+      feasibleCount: number;
+      higherCount: number;
+    } | null = null;
+
+    // Search m from max possible down to 0 to find the MAXIMUM feasible count
+    const startM = Math.min(stepLimit, feasiblePool.length);
+    for (let m = startM; m >= 0; m--) {
+      const selected: CandidateItem[] = [];
+      const usedChartIDs = new Set<string>();
+      let runningVF = currentVF;
+
+      // Add up to m feasible candidates
+      for (let i = 0; i < m && i < feasiblePool.length; i++) {
+        const cand = feasiblePool[i];
+        if (usedChartIDs.has(cand.id)) continue;
+        usedChartIDs.add(cand.id);
+        runningVF = Math.round((runningVF + cand.netVFGain) * 1000) / 1000;
+        selected.push({ ...cand, isHigherStuff: false });
+        if (runningVF >= targetVF) {
+          // Reached target entirely with feasible plays!
+          return {
+            selected,
+            finalVF: runningVF,
+            targetReached: true,
+            feasibleCount: selected.length,
+            higherCount: 0,
+            lamp,
+          };
+        }
+      }
+
+      const feasibleCount = selected.length;
+
+      // Fill remaining slots with the highest-gain charts from higherPool
+      for (const cand of higherPool) {
+        if (selected.length >= stepLimit) break;
+        if (usedChartIDs.has(cand.id)) continue;
+        usedChartIDs.add(cand.id);
+        runningVF = Math.round((runningVF + cand.netVFGain) * 1000) / 1000;
+        selected.push({ ...cand, isHigherStuff: true });
+        if (runningVF >= targetVF) break;
+      }
+
+      const higherCount = selected.length - feasibleCount;
+
+      if (!bestBlend || runningVF > bestBlend.finalVF) {
+        bestBlend = {
+          steps: selected,
+          finalVF: runningVF,
+          feasibleCount,
+          higherCount,
+        };
+      }
+
+      if (runningVF >= targetVF) {
+        // We found the MAXIMUM feasible count that hits targetVF!
+        return {
+          selected,
+          finalVF: runningVF,
+          targetReached: true,
+          feasibleCount,
+          higherCount,
+          lamp,
+        };
+      }
+    }
+
+    return {
+      selected: bestBlend ? bestBlend.steps : [],
+      finalVF: bestBlend ? bestBlend.finalVF : currentVF,
+      targetReached: false,
+      feasibleCount: bestBlend ? bestBlend.feasibleCount : 0,
+      higherCount: bestBlend ? bestBlend.higherCount : 0,
+      lamp,
+    };
+  }
+
+  // Phase 1: Try with user's targetLamp
+  let outcome = tryBlend(targetLamp, minFeasibility > 0 ? minFeasibility : 40);
+
+  // Phase 2: If target not reached and minFeasibility was high, try relaxing feasibility
+  if (!outcome.targetReached && minFeasibility > 20) {
+    const outcomeRelaxed = tryBlend(targetLamp, 20);
+    if (outcomeRelaxed.targetReached || outcomeRelaxed.finalVF > outcome.finalVF) {
+      outcome = outcomeRelaxed;
+    }
+  }
+
+  // Phase 3: If target still not reached, escalate higher stuff lamp to MAXXIVE CLEAR
+  if (!outcome.targetReached && targetLamp !== 'MAXXIVE CLEAR' && targetLamp !== 'ULTIMATE CHAIN') {
+    const outcomeMaxxive = tryBlend('MAXXIVE CLEAR', 0);
+    if (outcomeMaxxive.targetReached || outcomeMaxxive.finalVF > outcome.finalVF) {
+      outcome = outcomeMaxxive;
+    }
+  }
+
+  // Phase 4: If target still not reached, escalate higher stuff lamp to ULTIMATE CHAIN
+  if (!outcome.targetReached && targetLamp !== 'ULTIMATE CHAIN') {
+    const outcomeUC = tryBlend('ULTIMATE CHAIN', 0);
+    if (outcomeUC.targetReached || outcomeUC.finalVF > outcome.finalVF) {
+      outcome = outcomeUC;
+    }
+  }
+
+  // Assemble full RoadmapStep list with alternatives and cumulative VF
+  const candidates = outcome.selected;
+  const unusedCandidates = buildCandidates(upscores, farmables, version, strategy, outcome.lamp, 0).filter(
+    (c) => !candidates.some((sel) => sel.id === c.id),
+  );
+
+  const steps: RoadmapStep[] = [];
+  let currentCumulative = currentVF;
+
+  for (let i = 0; i < candidates.length; i++) {
+    const cand = candidates[i];
+    currentCumulative = Math.round((currentCumulative + cand.netVFGain) * 1000) / 1000;
+
+    const alternatives: RoadmapStepAlternative[] = unusedCandidates
+      .filter((alt) => {
+        const levelDelta = Math.abs(Math.floor(alt.levelNum) - Math.floor(cand.levelNum));
+        return (
+          levelDelta <= 1 &&
+          alt.netVFGain >= 0.005 &&
+          (cand.isHigherStuff || alt.feasibilityPercent >= 40)
+        );
+      })
+      .sort((a, b) => b.feasibilityPercent - a.feasibilityPercent || b.netVFGain - a.netVFGain)
+      .slice(0, 3)
+      .map((alt) => ({
+        chart: alt.chart,
+        song: alt.song,
+        type: alt.type,
+        currentScore: alt.currentScore,
+        currentLamp: alt.currentLamp,
+        targetScore: alt.targetScore,
+        targetLamp: alt.targetLamp,
+        targetGrade: alt.targetGrade || 'S',
+        chartVF: alt.chartVF,
+        netVFGain: alt.netVFGain,
+        rationale: alt.rationale,
+        primaryFactor: alt.primaryFactor,
+        feasibility: alt.feasibility,
+      }));
+
+    steps.push({
+      stepNumber: i + 1,
+      type: cand.type,
+      chart: cand.chart,
+      song: cand.song,
+      currentScore: cand.currentScore,
+      currentLamp: cand.currentLamp,
+      targetScore: cand.targetScore,
+      targetLamp: cand.targetLamp,
+      targetGrade: cand.targetGrade || 'S',
+      chartVF: cand.chartVF,
+      netVFGain: cand.netVFGain,
+      cumulativeProfileVF: currentCumulative,
+      completed: false,
+      rationale: cand.isHigherStuff
+        ? `Strategic high-yield target pusher (+${cand.netVFGain.toFixed(3)} VF) to bridge your profile to ${targetVF.toFixed(3)} VF.`
+        : cand.rationale,
+      primaryFactor: cand.isHigherStuff
+        ? `Target Pusher (+${cand.netVFGain.toFixed(3)} VF)`
+        : cand.primaryFactor,
+      feasibility: cand.feasibility,
+      alternatives,
+      strategyUsed: strategy,
+      strategyAdjusted: outcome.higherCount > 0 || outcome.lamp !== targetLamp,
+      isHigherStuff: cand.isHigherStuff,
+    });
+  }
+
+  const res = steps as RoadmapStepList;
+  res.strategyUsed = strategy;
+  res.originalStrategy = strategy;
+  res.wasStrategyChanged = outcome.higherCount > 0 || outcome.lamp !== targetLamp;
+  res.feasibleCount = outcome.feasibleCount;
+  res.higherStuffCount = outcome.higherCount;
+  res.effectiveLamp = outcome.lamp;
+  res.targetReached = outcome.targetReached;
+
+  if (outcome.higherCount > 0) {
+    const lampNote = outcome.lamp !== targetLamp ? ` with ${outcome.lamp} goals` : '';
+    res.strategyChangeReason = `Maximized ${outcome.feasibleCount} feasible ${outcome.feasibleCount === 1 ? 'goal' : 'goals'} with ${outcome.higherCount} high-yield target ${outcome.higherCount === 1 ? 'pusher' : 'pushers'}${lampNote} to reach ${targetVF.toFixed(3)} VF.`;
+  } else {
+    res.strategyChangeReason = `Achieved ${targetVF.toFixed(3)} VF using 100% feasible goals (${outcome.feasibleCount} steps).`;
+  }
+
+  return res;
+}
+
 export function generateRoadmap(
   currentVF: number,
   targetVF: number,
@@ -313,10 +540,27 @@ export function generateRoadmap(
     empty.originalStrategy = strategy;
     empty.wasStrategyChanged = false;
     empty.targetReached = true;
+    empty.feasibleCount = 0;
+    empty.higherStuffCount = 0;
     return empty;
   }
 
-  // 1. Initial attempt: Use user's requested strategy and parameters
+  // If strategy is most-feasible or upscores-first: maximize feasible stuff and fill with higher stuff!
+  if (strategy === 'most-feasible' || strategy === 'upscores-first') {
+    return maximizeFeasibleWithHigherStuff(
+      currentVF,
+      targetVF,
+      upscores,
+      farmables,
+      version,
+      strategy,
+      targetLamp,
+      minFeasibility,
+      maxSteps,
+    );
+  }
+
+  // For other strategies (e.g. fastest, balanced): try requested strategy first
   const firstPlan = tryGeneratePlan(
     currentVF,
     targetVF,
@@ -329,188 +573,27 @@ export function generateRoadmap(
     maxSteps,
   );
 
-  // If the initial plan succeeded in reaching the target VF, return it directly
   if (firstPlan.targetReached || firstPlan.steps.length === 0) {
     const res = firstPlan.steps as RoadmapStepList;
     res.strategyUsed = strategy;
     res.originalStrategy = strategy;
     res.wasStrategyChanged = false;
     res.targetReached = firstPlan.targetReached;
+    res.feasibleCount = firstPlan.steps.length;
+    res.higherStuffCount = 0;
     return res;
   }
 
-  // 2. The first plan didn't reach the target within 50 plays!
-  // "Change the strategy if the first plan doesn't work"
-  interface AttemptConfig {
-    strat: RoadmapStrategy;
-    feas: number;
-    lamp: SDVXLamp;
-    reason: string;
-  }
-
-  const escalationList: AttemptConfig[] = [];
-
-  // Phase A: Try alternative strategies with current minFeasibility & lamp
-  if (strategy === 'most-feasible') {
-    escalationList.push({
-      strat: 'balanced',
-      feas: minFeasibility,
-      lamp: targetLamp,
-      reason: `Switched from "Most Feasible" to "Balanced Growth" to reach ${targetVF.toFixed(3)} VF within 50 plays.`,
-    });
-    escalationList.push({
-      strat: 'fastest',
-      feas: minFeasibility,
-      lamp: targetLamp,
-      reason: `Switched from "Most Feasible" to "Fastest Gain" to maximize VF per play and reach ${targetVF.toFixed(3)} VF within 50 plays.`,
-    });
-  } else if (strategy === 'upscores-first') {
-    escalationList.push({
-      strat: 'most-feasible',
-      feas: minFeasibility,
-      lamp: targetLamp,
-      reason: `Switched from "Upscores First" to "Most Feasible" combining high-gain farmable songs to reach ${targetVF.toFixed(3)} VF.`,
-    });
-    escalationList.push({
-      strat: 'balanced',
-      feas: minFeasibility,
-      lamp: targetLamp,
-      reason: `Switched to "Balanced Growth" to reach ${targetVF.toFixed(3)} VF within 50 plays.`,
-    });
-    escalationList.push({
-      strat: 'fastest',
-      feas: minFeasibility,
-      lamp: targetLamp,
-      reason: `Switched to "Fastest Gain" to reach ${targetVF.toFixed(3)} VF within 50 plays.`,
-    });
-  } else if (strategy === 'farmables-only') {
-    escalationList.push({
-      strat: 'most-feasible',
-      feas: minFeasibility,
-      lamp: targetLamp,
-      reason: `Unlocked existing upscores in "Most Feasible" strategy to reach ${targetVF.toFixed(3)} VF.`,
-    });
-    escalationList.push({
-      strat: 'balanced',
-      feas: minFeasibility,
-      lamp: targetLamp,
-      reason: `Switched to "Balanced Growth" to reach ${targetVF.toFixed(3)} VF within 50 plays.`,
-    });
-    escalationList.push({
-      strat: 'fastest',
-      feas: minFeasibility,
-      lamp: targetLamp,
-      reason: `Switched to "Fastest Gain" to reach ${targetVF.toFixed(3)} VF within 50 plays.`,
-    });
-  } else if (strategy === 'balanced') {
-    escalationList.push({
-      strat: 'fastest',
-      feas: minFeasibility,
-      lamp: targetLamp,
-      reason: `Switched from "Balanced Growth" to "Fastest Gain" to maximize VF per play and reach ${targetVF.toFixed(3)} VF within 50 plays.`,
-    });
-  }
-
-  // Phase B: Try relaxing feasibility filter (unlocks higher level stretch charts)
-  if (minFeasibility > 20) {
-    escalationList.push({
-      strat: 'balanced',
-      feas: 20,
-      lamp: targetLamp,
-      reason: `Switched to "Balanced Growth" with accessible stretch charts (≥20% feas) to reach ${targetVF.toFixed(3)} VF.`,
-    });
-    escalationList.push({
-      strat: 'fastest',
-      feas: 20,
-      lamp: targetLamp,
-      reason: `Switched to "Fastest Gain" with accessible stretch charts (≥20% feas) to reach ${targetVF.toFixed(3)} VF.`,
-    });
-  }
-
-  if (minFeasibility > 0) {
-    escalationList.push({
-      strat: 'fastest',
-      feas: 0,
-      lamp: targetLamp,
-      reason: `Switched to "Fastest Gain" including all available challenge charts to reach ${targetVF.toFixed(3)} VF within 50 plays.`,
-    });
-  }
-
-  // Phase C: Try lamp escalation (MAXXIVE CLEAR, ULTIMATE CHAIN)
-  if (targetLamp !== 'MAXXIVE CLEAR' && targetLamp !== 'ULTIMATE CHAIN') {
-    escalationList.push({
-      strat: 'fastest',
-      feas: 0,
-      lamp: 'MAXXIVE CLEAR',
-      reason: `Escalated to "Fastest Gain" with Maxxive Clear (104%) benchmarks to reach ${targetVF.toFixed(3)} VF within 50 plays.`,
-    });
-  }
-
-  if (targetLamp !== 'ULTIMATE CHAIN') {
-    escalationList.push({
-      strat: 'fastest',
-      feas: 0,
-      lamp: 'ULTIMATE CHAIN',
-      reason: `Escalated to "Fastest Gain" with Ultimate Chain (UC) benchmarks to reach ${targetVF.toFixed(3)} VF within 50 plays.`,
-    });
-  }
-
-  // Evaluate escalation attempts and pick the first that reaches targetVF
-  let bestPlan = firstPlan;
-  let bestConfig: AttemptConfig = {
-    strat: strategy,
-    feas: minFeasibility,
-    lamp: targetLamp,
-    reason: `Maximized available gains (reaches ${firstPlan.finalVF.toFixed(3)} VF within 50 plays).`,
-  };
-
-  for (const attempt of escalationList) {
-    const plan = tryGeneratePlan(
-      currentVF,
-      targetVF,
-      upscores,
-      farmables,
-      version,
-      attempt.strat,
-      attempt.lamp,
-      attempt.feas,
-      maxSteps,
-    );
-
-    if (plan.finalVF > bestPlan.finalVF) {
-      bestPlan = plan;
-      bestConfig = attempt;
-    }
-
-    if (plan.targetReached) {
-      const res = plan.steps as RoadmapStepList;
-      res.strategyUsed = attempt.strat;
-      res.originalStrategy = strategy;
-      res.wasStrategyChanged = true;
-      res.strategyChangeReason = attempt.reason;
-      res.effectiveLamp = attempt.lamp;
-      res.targetReached = true;
-      for (const step of res) {
-        step.strategyUsed = attempt.strat;
-        step.strategyAdjusted = true;
-        step.strategyAdjustmentReason = attempt.reason;
-      }
-      return res;
-    }
-  }
-
-  // If no escalation completely reached targetVF, return the best achievable plan
-  const res = bestPlan.steps as RoadmapStepList;
-  res.strategyUsed = bestConfig.strat;
-  res.originalStrategy = strategy;
-  res.wasStrategyChanged = bestConfig.strat !== strategy || bestConfig.lamp !== targetLamp;
-  res.strategyChangeReason = bestConfig.reason;
-  res.effectiveLamp = bestConfig.lamp;
-  res.targetReached = false;
-  for (const step of res) {
-    step.strategyUsed = bestConfig.strat;
-    step.strategyAdjusted = res.wasStrategyChanged;
-    step.strategyAdjustmentReason = bestConfig.reason;
-  }
-  return res;
+  // If requested strategy falls short in 50 steps: maximize feasible stuff with higher stuff!
+  return maximizeFeasibleWithHigherStuff(
+    currentVF,
+    targetVF,
+    upscores,
+    farmables,
+    version,
+    strategy,
+    targetLamp,
+    minFeasibility,
+    maxSteps,
+  );
 }

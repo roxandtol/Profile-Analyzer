@@ -315,6 +315,8 @@ export const App: React.FC = () => {
     list.strategyChangeReason = (baseRoadmap as any).strategyChangeReason;
     list.effectiveLamp = (baseRoadmap as any).effectiveLamp;
     list.targetReached = (baseRoadmap as any).targetReached;
+    list.feasibleCount = (baseRoadmap as any).feasibleCount;
+    list.higherStuffCount = (baseRoadmap as any).higherStuffCount;
     return list;
   }, [baseRoadmap, stepOverrides, analysis]);
 
