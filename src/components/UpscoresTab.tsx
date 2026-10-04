@@ -274,7 +274,8 @@ export const UpscoresTab: React.FC<UpscoresTabProps> = ({ upscores, version, ser
                 <div className="space-y-1">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span
-                      className={`inline-block px-1.5 py-0.2 rounded text-[10px] font-black uppercase tracking-wider ${
+                      title={u.description}
+                      className={`inline-block px-1.5 py-0.2 rounded text-[10px] font-black uppercase tracking-wider cursor-help ${
                         u.category === 'near-s'
                           ? 'bg-pink-500/10 text-pink-400 border border-pink-500/30'
                           : u.category === 'near-aaa-plus'
@@ -455,22 +456,29 @@ export const UpscoresTab: React.FC<UpscoresTabProps> = ({ upscores, version, ser
 
                       {/* Rationale / Category */}
                       <td className="py-3 px-4">
-                        <span
-                          className={`inline-block px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider mb-1 ${
-                            u.category === 'near-s'
-                              ? 'bg-pink-500/10 text-pink-400 border border-pink-500/30'
-                              : u.category === 'near-aaa-plus'
-                              ? 'bg-rose-500/10 text-rose-400 border border-rose-500/30'
-                              : u.category === 'lamp-upgrade'
-                              ? 'bg-purple-500/10 text-purple-400 border border-purple-500/30'
-                              : 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/30'
-                          }`}
-                        >
-                          {u.category}
-                        </span>
-                        <p className="text-[11px] text-gray-400 max-w-sm">
-                          {u.description}
-                        </p>
+                        <div className="relative group inline-block">
+                          <span
+                            title={u.description}
+                            className={`inline-block px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider cursor-help border transition-colors whitespace-nowrap ${
+                              u.category === 'near-s'
+                                ? 'bg-pink-500/10 text-pink-400 border-pink-500/30 group-hover:bg-pink-500/20 group-hover:border-pink-500/50'
+                                : u.category === 'near-aaa-plus'
+                                ? 'bg-rose-500/10 text-rose-400 border-rose-500/30 group-hover:bg-rose-500/20 group-hover:border-rose-500/50'
+                                : u.category === 'lamp-upgrade'
+                                ? 'bg-purple-500/10 text-purple-400 border-purple-500/30 group-hover:bg-purple-500/20 group-hover:border-purple-500/50'
+                                : 'bg-cyan-500/10 text-cyan-400 border-cyan-500/30 group-hover:bg-cyan-500/20 group-hover:border-cyan-500/50'
+                            }`}
+                          >
+                            {u.category}
+                          </span>
+
+                          {/* Hover Tooltip Description */}
+                          <div className="absolute right-0 top-full mt-1.5 hidden group-hover:block z-50 w-72 p-2.5 bg-[#141b2d] border border-[#2b3a58] rounded-xl shadow-2xl text-[11px] text-gray-200 pointer-events-none">
+                            <p className="leading-snug text-gray-300">
+                              {u.description}
+                            </p>
+                          </div>
+                        </div>
                       </td>
                     </tr>
                   );
