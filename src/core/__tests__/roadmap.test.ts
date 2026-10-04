@@ -340,5 +340,10 @@ describe('Roadmap Generator Strategies & Feasibility Priority', () => {
     expect(roadmap.higherStuffCount).toBeGreaterThan(0); // Filled gap with higher stuff!
     expect(roadmap[roadmap.length - 1].cumulativeProfileVF).toBeGreaterThanOrEqual(17.200);
     expect(roadmap.length).toBeLessThanOrEqual(50);
+    const pusherSteps = roadmap.filter((s) => s.isHigherStuff);
+    expect(pusherSteps.length).toBe(roadmap.higherStuffCount);
+    expect(pusherSteps.length).toBeGreaterThan(0);
+    expect(pusherSteps[0].primaryFactor).toContain('Target Pusher');
   });
 });
+

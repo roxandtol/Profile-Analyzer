@@ -239,7 +239,9 @@ async function main() {
       console.log('  ────────────────────────────────────────────────────────────────────────────');
       for (const step of roadmap) {
         const num = `#${step.stepNumber}`.padStart(3);
-        const type = `[${step.type.toUpperCase()}]`.padEnd(10);
+        const type = step.isHigherStuff
+          ? '[PUSHER]   '
+          : `[${step.type.toUpperCase()}]`.padEnd(10);
         const title = step.song.title.slice(0, 26).padEnd(26);
         const diff = `[${step.chart.difficulty} ${formatChartLevel(step.chart.levelNum, args.version)}]`.padEnd(10);
         const gain = `+${step.netVFGain.toFixed(3)} VF`.padEnd(11);

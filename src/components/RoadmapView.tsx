@@ -13,6 +13,7 @@ import {
   Square,
   ExternalLink,
   Info,
+  Rocket,
 } from 'lucide-react';
 import {
   RoadmapStep,
@@ -127,7 +128,7 @@ export const RoadmapView: React.FC<RoadmapViewProps> = ({
   const [hideLowFeasibility, setHideLowFeasibility] = useState<boolean>(true);
 
   const displayedSteps = hideLowFeasibility
-    ? steps.filter((s) => (s.feasibility?.feasibilityPercent ?? 50) >= 40)
+    ? steps.filter((s) => s.isHigherStuff || (s.feasibility?.feasibilityPercent ?? 50) >= 40)
     : steps;
 
   const toggleStep = (stepNumber: number) => {
@@ -360,6 +361,8 @@ export const RoadmapView: React.FC<RoadmapViewProps> = ({
                 className={`border rounded-xl p-4 transition-all duration-200 ${
                   isDone
                     ? 'bg-[#101b24]/60 border-emerald-500/40 shadow-sm'
+                    : step.isHigherStuff
+                    ? 'bg-gradient-to-r from-purple-950/30 via-[#131226] to-[#0f1422] border-purple-500/50 border-l-4 border-l-purple-400 shadow-lg shadow-purple-500/10'
                     : 'bg-[#0f1422] border-[#1f293d] hover:border-[#2b3a58]'
                 }`}
               >
@@ -383,7 +386,8 @@ export const RoadmapView: React.FC<RoadmapViewProps> = ({
                     </span>
 
                     {step.isHigherStuff ? (
-                      <span className="px-1.5 sm:px-2 py-0.5 rounded text-[9px] sm:text-[10px] font-mono font-bold uppercase tracking-wider bg-purple-500/20 text-purple-300 border border-purple-500/40">
+                      <span className="px-2 py-0.5 rounded text-[10px] font-mono font-black uppercase tracking-wider bg-purple-500/25 text-purple-300 border border-purple-500/50 shadow-sm flex items-center gap-1">
+                        <Rocket className="w-3 h-3 text-purple-400" />
                         Target Pusher
                       </span>
                     ) : (
@@ -440,6 +444,12 @@ export const RoadmapView: React.FC<RoadmapViewProps> = ({
                     >
                       {step.chart.difficulty} {formatChartLevel(step.chart.levelNum, version)}
                     </span>
+                    {step.isHigherStuff && (
+                      <span className="px-1.5 py-0.5 rounded text-[9px] sm:text-[10px] font-mono font-bold uppercase tracking-wider bg-purple-500/20 text-purple-300 border border-purple-500/40 shrink-0 flex items-center gap-1">
+                        <Rocket className="w-2.5 h-2.5 text-purple-400" />
+                        Pusher
+                      </span>
+                    )}
                     <a
                       href={getKamaiChartUrl(step.chart.chartID)}
                       target="_blank"

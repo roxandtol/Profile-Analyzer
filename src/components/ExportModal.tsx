@@ -37,7 +37,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
     md += `## Arcade Action Plan\n\n`;
 
     for (const s of steps) {
-      const type = s.type === 'upscore' ? 'UPSCORE' : 'FARMABLE';
+      const type = s.isHigherStuff ? 'TARGET PUSHER' : s.type === 'upscore' ? 'UPSCORE' : 'FARMABLE';
       const targetStr = `${s.targetScore.toLocaleString()} (${s.targetLamp})`;
       const currStr = s.currentScore ? `Current: ${s.currentScore.toLocaleString()} -> ` : '';
       const feasStr = s.feasibility ? ` [Feasibility: ${s.feasibility.feasibilityPercent}%]` : '';
@@ -55,7 +55,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
     txt += `Current: ${currentVF.toFixed(3)} | Target: ${targetVF.toFixed(3)} (+${(targetVF - currentVF).toFixed(3)} VF)\n\n`;
 
     for (const s of steps) {
-      const type = s.type === 'upscore' ? 'UP' : 'FARM';
+      const type = s.isHigherStuff ? 'PUSHER' : s.type === 'upscore' ? 'UP' : 'FARM';
       const feasStr = s.feasibility ? ` (${s.feasibility.feasibilityPercent}% feas)` : '';
       const chartUrl = getKamaiChartUrl(s.chart.chartID);
       txt += `[ ] #${s.stepNumber} [${type}] ${s.song.title} [${s.chart.difficulty} ${formatChartLevel(s.chart.levelNum, version)}]${feasStr}\n`;

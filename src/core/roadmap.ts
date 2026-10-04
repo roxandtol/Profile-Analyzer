@@ -33,6 +33,33 @@ interface CandidateItem {
 
 export const MAX_ROADMAP_STEPS = 50;
 
+/**
+ * Determines whether a chart acts as a high-yield "Target Pusher" for bridging to targetVF.
+ */
+export function isPusherChart(
+  cand: {
+    levelNum: number;
+    netVFGain: number;
+    chartVF?: number;
+    isHigherStuff?: boolean;
+    targetLamp?: string;
+    type?: string;
+  },
+  targetVF: number,
+): boolean {
+  if (cand.isHigherStuff) return true;
+  if (cand.targetLamp === 'ULTIMATE CHAIN' || cand.targetLamp === 'MAXXIVE CLEAR') {
+    if (cand.netVFGain >= 0.015) return true;
+  }
+  // High difficulty tier: Level 19 or 20 in SDVX is always a pusher milestone
+  if (cand.levelNum >= 19.0) return true;
+  // High single-chart VF meeting or exceeding targetCutoff with meaningful gain
+  const targetCutoff = targetVF / 50;
+  if (cand.chartVF && cand.chartVF >= targetCutoff && cand.netVFGain >= 0.015) return true;
+  if (cand.netVFGain >= 0.025) return true;
+  return false;
+}
+
 function buildCandidates(
   upscores: UpscoreOpportunity[],
   farmables: FarmableOpportunity[],
@@ -316,22 +343,20 @@ function maximizeFeasibleWithHigherStuff(
 
   // Helper to attempt blending with a specific higher-stuff lamp and feasibility gate
   function tryBlend(lamp: SDVXLamp, feasCutoff: number) {
-    // 1. Feasible Pool: high confidence, accessible, quick wins
+    // 1. Feasible Pool: all candidates with solid feasibility (>= 45% or quick wins)
     const allFeasible = buildCandidates(upscores, farmables, version, strategy, targetLamp, feasCutoff);
     const feasiblePool = sortCandidates(
       allFeasible.filter((c) => c.feasibilityPercent >= 45 || c.isQuickWin),
       'most-feasible',
     );
 
-    // 2. Higher Pool: maximized for net VF gain to bridge any remaining gap
+    // 2. Higher Pool: maximized for net VF gain to bridge any remaining gap (pusher charts)
     const allHigher = buildCandidates(upscores, farmables, version, strategy, lamp, 0);
     const higherPool = sortCandidates(allHigher, 'fastest');
 
     let bestBlend: {
       steps: CandidateItem[];
       finalVF: number;
-      feasibleCount: number;
-      higherCount: number;
     } | null = null;
 
     // Search m from max possible down to 0 to find the MAXIMUM feasible count
@@ -354,14 +379,10 @@ function maximizeFeasibleWithHigherStuff(
             selected,
             finalVF: runningVF,
             targetReached: true,
-            feasibleCount: selected.length,
-            higherCount: 0,
             lamp,
           };
         }
       }
-
-      const feasibleCount = selected.length;
 
       // Fill remaining slots with the highest-gain charts from higherPool
       for (const cand of higherPool) {
@@ -373,25 +394,19 @@ function maximizeFeasibleWithHigherStuff(
         if (runningVF >= targetVF) break;
       }
 
-      const higherCount = selected.length - feasibleCount;
-
       if (!bestBlend || runningVF > bestBlend.finalVF) {
         bestBlend = {
           steps: selected,
           finalVF: runningVF,
-          feasibleCount,
-          higherCount,
         };
       }
 
       if (runningVF >= targetVF) {
-        // We found the MAXIMUM feasible count that hits targetVF!
+        // Found the plan with maximum feasible charts that reaches targetVF
         return {
           selected,
           finalVF: runningVF,
           targetReached: true,
-          feasibleCount,
-          higherCount,
           lamp,
         };
       }
@@ -401,8 +416,6 @@ function maximizeFeasibleWithHigherStuff(
       selected: bestBlend ? bestBlend.steps : [],
       finalVF: bestBlend ? bestBlend.finalVF : currentVF,
       targetReached: false,
-      feasibleCount: bestBlend ? bestBlend.feasibleCount : 0,
-      higherCount: bestBlend ? bestBlend.higherCount : 0,
       lamp,
     };
   }
@@ -435,17 +448,18 @@ function maximizeFeasibleWithHigherStuff(
   }
 
   // Assemble full RoadmapStep list with alternatives and cumulative VF
-  const candidates = outcome.selected;
+  const rawCandidates = outcome.selected;
   const unusedCandidates = buildCandidates(upscores, farmables, version, strategy, outcome.lamp, 0).filter(
-    (c) => !candidates.some((sel) => sel.id === c.id),
+    (c) => !rawCandidates.some((sel) => sel.id === c.id),
   );
 
   const steps: RoadmapStep[] = [];
   let currentCumulative = currentVF;
 
-  for (let i = 0; i < candidates.length; i++) {
-    const cand = candidates[i];
+  for (let i = 0; i < rawCandidates.length; i++) {
+    const cand = rawCandidates[i];
     currentCumulative = Math.round((currentCumulative + cand.netVFGain) * 1000) / 1000;
+    const isPusher = isPusherChart(cand, targetVF);
 
     const alternatives: RoadmapStepAlternative[] = unusedCandidates
       .filter((alt) => {
@@ -453,7 +467,7 @@ function maximizeFeasibleWithHigherStuff(
         return (
           levelDelta <= 1 &&
           alt.netVFGain >= 0.005 &&
-          (cand.isHigherStuff || alt.feasibilityPercent >= 40)
+          (isPusher || alt.feasibilityPercent >= 40)
         );
       })
       .sort((a, b) => b.feasibilityPercent - a.feasibilityPercent || b.netVFGain - a.netVFGain)
@@ -488,34 +502,37 @@ function maximizeFeasibleWithHigherStuff(
       netVFGain: cand.netVFGain,
       cumulativeProfileVF: currentCumulative,
       completed: false,
-      rationale: cand.isHigherStuff
+      rationale: isPusher
         ? `Strategic high-yield target pusher (+${cand.netVFGain.toFixed(3)} VF) to bridge your profile to ${targetVF.toFixed(3)} VF.`
         : cand.rationale,
-      primaryFactor: cand.isHigherStuff
+      primaryFactor: isPusher
         ? `Target Pusher (+${cand.netVFGain.toFixed(3)} VF)`
         : cand.primaryFactor,
       feasibility: cand.feasibility,
       alternatives,
       strategyUsed: strategy,
-      strategyAdjusted: outcome.higherCount > 0 || outcome.lamp !== targetLamp,
-      isHigherStuff: cand.isHigherStuff,
+      strategyAdjusted: isPusher || outcome.lamp !== targetLamp,
+      isHigherStuff: isPusher,
     });
   }
+
+  const pusherCount = steps.filter((s) => s.isHigherStuff).length;
+  const feasibleCount = steps.length - pusherCount;
 
   const res = steps as RoadmapStepList;
   res.strategyUsed = strategy;
   res.originalStrategy = strategy;
-  res.wasStrategyChanged = outcome.higherCount > 0 || outcome.lamp !== targetLamp;
-  res.feasibleCount = outcome.feasibleCount;
-  res.higherStuffCount = outcome.higherCount;
+  res.wasStrategyChanged = pusherCount > 0 || outcome.lamp !== targetLamp;
+  res.feasibleCount = feasibleCount;
+  res.higherStuffCount = pusherCount;
   res.effectiveLamp = outcome.lamp;
   res.targetReached = outcome.targetReached;
 
-  if (outcome.higherCount > 0) {
+  if (pusherCount > 0) {
     const lampNote = outcome.lamp !== targetLamp ? ` with ${outcome.lamp} goals` : '';
-    res.strategyChangeReason = `Maximized ${outcome.feasibleCount} feasible ${outcome.feasibleCount === 1 ? 'goal' : 'goals'} with ${outcome.higherCount} high-yield target ${outcome.higherCount === 1 ? 'pusher' : 'pushers'}${lampNote} to reach ${targetVF.toFixed(3)} VF.`;
+    res.strategyChangeReason = `Maximized ${feasibleCount} feasible ${feasibleCount === 1 ? 'goal' : 'goals'} with ${pusherCount} high-yield target ${pusherCount === 1 ? 'pusher' : 'pushers'}${lampNote} to reach ${targetVF.toFixed(3)} VF.`;
   } else {
-    res.strategyChangeReason = `Achieved ${targetVF.toFixed(3)} VF using 100% feasible goals (${outcome.feasibleCount} steps).`;
+    res.strategyChangeReason = `Achieved ${targetVF.toFixed(3)} VF using 100% feasible goals (${feasibleCount} steps).`;
   }
 
   return res;
