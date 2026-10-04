@@ -224,4 +224,46 @@ describe('Roadmap Generator Strategies & Feasibility Priority', () => {
     expect(roadmapUC[0].targetScore).toBe(9_900_000);
     expect(roadmapUC[0].netVFGain).toBe(0.055);
   });
+
+  it('enforces a maximum of 50 steps based on SDVX Top 50 Volforce calculation', () => {
+    // Generate 60 mock farmable opportunities
+    const manyFarmables: FarmableOpportunity[] = Array.from({ length: 60 }, (_, i) => ({
+      id: `f-${i}`,
+      chart: { chartID: `chart-${i}`, difficulty: 'MXM', level: '18', levelNum: 18.0 },
+      song: { id: `song-${i}`, title: `Song ${i}`, artist: `Artist ${i}` },
+      levelNum: 18.0,
+      difficulty: 'MXM',
+      individualDifference: false,
+      projectedScore: 9_900_000,
+      projectedLamp: 'EXCESSIVE CLEAR',
+      projectedVF: 0.380,
+      netVFGain: 0.010,
+      farmabilityScore: 100,
+      isPlayed: false,
+      primaryAdvantage: 'High Net Gain',
+      feasibility: {
+        expectedPlayerVF: 18.0,
+        userVF: 17.5,
+        vfFitDelta: -0.5,
+        feasibilityPercent: 70,
+        feasibilityTier: 'MODERATE',
+        label: 'Moderate',
+        explanation: 'Accessible',
+      },
+    }));
+
+    // Target requires +1.000 VF, which with +0.010 per chart would take 100 charts
+    const roadmap = generateRoadmap(
+      18.000,
+      19.000,
+      [],
+      manyFarmables,
+      'vf6',
+      'fastest',
+    );
+
+    expect(roadmap.length).toBe(50);
+    expect(roadmap.length).toBeLessThanOrEqual(50);
+    expect(roadmap[49].stepNumber).toBe(50);
+  });
 });

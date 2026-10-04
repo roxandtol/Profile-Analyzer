@@ -12,6 +12,7 @@ import {
   CheckSquare,
   Square,
   ExternalLink,
+  Info,
 } from 'lucide-react';
 import {
   RoadmapStep,
@@ -288,6 +289,18 @@ export const RoadmapView: React.FC<RoadmapViewProps> = ({
             />
           </div>
         </div>
+
+        {steps.length >= 50 && steps[steps.length - 1]?.cumulativeProfileVF < targetVF && (
+          <div className="mt-4 flex items-start gap-2.5 p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-200">
+            <Info className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+            <div>
+              <span className="font-bold text-amber-300">Top 50 Limit Reached (50 Scores Max): </span>
+              Because Volforce is calculated strictly from your top 50 plays, a roadmap cannot exceed 50 scores.
+              Completing all 50 steps reaches <strong className="text-white">{steps[steps.length - 1].cumulativeProfileVF.toFixed(3)} VF</strong>.
+              To reach <strong className="text-white">{targetVF.toFixed(3)} VF</strong>, consider targeting higher difficulty charts or aiming for UC / Maxxive Clear lamps.
+            </div>
+          </div>
+        )}
       </div>
 
       {displayedSteps.length === 0 ? (

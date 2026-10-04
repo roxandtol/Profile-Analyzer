@@ -27,6 +27,8 @@ interface CandidateItem {
   isQuickWin?: boolean;
 }
 
+export const MAX_ROADMAP_STEPS = 50;
+
 export function generateRoadmap(
   currentVF: number,
   targetVF: number,
@@ -36,6 +38,7 @@ export function generateRoadmap(
   strategy: RoadmapStrategy = 'most-feasible',
   targetLamp: any = 'EXCESSIVE CLEAR',
   minFeasibility: number = 0,
+  maxSteps: number = MAX_ROADMAP_STEPS,
 ): RoadmapStep[] {
   const steps: RoadmapStep[] = [];
   const deltaNeeded = Math.max(0, targetVF - currentVF);
@@ -170,7 +173,9 @@ export function generateRoadmap(
   const usedChartIDs = new Set<string>();
   const selectedCandidates: CandidateItem[] = [];
 
+  const stepLimit = Math.max(1, maxSteps);
   for (const cand of candidates) {
+    if (selectedCandidates.length >= stepLimit) break;
     if (usedChartIDs.has(cand.id)) continue;
     usedChartIDs.add(cand.id);
 
