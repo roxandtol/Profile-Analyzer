@@ -33,9 +33,95 @@ interface CandidateItem {
 
 export const MAX_ROADMAP_STEPS = 50;
 
+export interface Top50Slot {
+  chartID: string;
+  vf: number;
+}
+
+/**
+ * Simulates a player's active Top 50 score buffer in SDVX.
+ * Tracks accurate slot displacement, rising cutoff, and exact cumulative profile Volforce.
+ */
+export class SimulatedTop50 {
+  slots: Top50Slot[] | null;
+  runningVF: number;
+
+  constructor(initial?: Top50Slot[], initialVF: number = 0) {
+    if (initial && initial.length > 0) {
+      this.slots = initial.map((s) => ({ chartID: s.chartID, vf: s.vf }));
+      this.slots.sort((a, b) => b.vf - a.vf);
+      while (this.slots.length < 50) {
+        this.slots.push({ chartID: `empty-${this.slots.length}`, vf: 0 });
+      }
+      this.slots = this.slots.slice(0, 50);
+      const sum = this.slots.reduce((acc, s) => acc + s.vf, 0);
+      this.runningVF = Math.round(sum * 1000) / 1000;
+    } else {
+      this.slots = null;
+      this.runningVF = initialVF;
+    }
+  }
+
+  clone(): SimulatedTop50 {
+    return new SimulatedTop50(this.slots ?? undefined, this.runningVF);
+  }
+
+  getProfileVF(): number {
+    if (this.slots) {
+      const sum = this.slots.reduce((acc, s) => acc + s.vf, 0);
+      return Math.round(sum * 1000) / 1000;
+    }
+    return this.runningVF;
+  }
+
+  getCutoff(): number {
+    return this.slots ? (this.slots[49]?.vf ?? 0) : 0;
+  }
+
+  /**
+   * Evaluates the net profile VF gain if this chart is achieved at targetVF.
+   */
+  evaluateGain(chartID: string, targetVF: number, fallbackGain: number): number {
+    if (!this.slots) {
+      return fallbackGain;
+    }
+    const existingIdx = this.slots.findIndex((s) => s.chartID === chartID);
+    if (existingIdx !== -1) {
+      return Math.max(0, Math.round((targetVF - this.slots[existingIdx].vf) * 1000) / 1000);
+    }
+    const lowest = this.slots[49].vf;
+    return Math.max(0, Math.round((targetVF - lowest) * 1000) / 1000);
+  }
+
+  /**
+   * Applies the play to the Top 50 buffer, updating or displacing the lowest slot.
+   * Returns actual net profile gain achieved.
+   */
+  applyPlay(chartID: string, targetVF: number, fallbackGain: number): number {
+    if (!this.slots) {
+      this.runningVF = Math.round((this.runningVF + fallbackGain) * 1000) / 1000;
+      return fallbackGain;
+    }
+    const gain = this.evaluateGain(chartID, targetVF, fallbackGain);
+    if (gain <= 0.0001) return 0;
+
+    const existingIdx = this.slots.findIndex((s) => s.chartID === chartID);
+    if (existingIdx !== -1) {
+      this.slots[existingIdx].vf = targetVF;
+    } else {
+      this.slots[49] = { chartID, vf: targetVF };
+    }
+
+    this.slots.sort((a, b) => b.vf - a.vf);
+    return gain;
+  }
+}
+
+
 /**
  * Determines whether a chart acts as a high-yield "Target Pusher" for bridging to targetVF.
  */
+
 export function isPusherChart(
   cand: {
     levelNum?: number;
@@ -229,12 +315,13 @@ function assembleSteps(
   targetVF: number,
   maxSteps: number,
   minFeasibility: number,
+  initialTop50?: Top50Slot[],
 ): {
   steps: RoadmapStep[];
   finalVF: number;
   targetReached: boolean;
 } {
-  let runningVF = currentVF;
+  const sim = new SimulatedTop50(initialTop50, currentVF);
   const usedChartIDs = new Set<string>();
   const selectedCandidates: CandidateItem[] = [];
 
@@ -242,21 +329,26 @@ function assembleSteps(
   for (const cand of candidates) {
     if (selectedCandidates.length >= stepLimit) break;
     if (usedChartIDs.has(cand.id)) continue;
+
+    const gain = sim.evaluateGain(cand.id, cand.chartVF, cand.netVFGain);
+    if (gain <= 0.0001) continue;
+
+    sim.applyPlay(cand.id, cand.chartVF, cand.netVFGain);
     usedChartIDs.add(cand.id);
+    selectedCandidates.push({ ...cand, netVFGain: gain });
 
-    runningVF = Math.round((runningVF + cand.netVFGain) * 1000) / 1000;
-    selectedCandidates.push(cand);
-
-    if (runningVF >= targetVF) break;
+    if (sim.getProfileVF() >= targetVF) break;
   }
 
   const unusedCandidates = candidates.filter((c) => !usedChartIDs.has(c.id));
   const steps: RoadmapStep[] = [];
-  let currentCumulative = currentVF;
+  const finalSim = new SimulatedTop50(initialTop50, currentVF);
 
   for (let i = 0; i < selectedCandidates.length; i++) {
     const cand = selectedCandidates[i];
-    currentCumulative = Math.round((currentCumulative + cand.netVFGain) * 1000) / 1000;
+    const actualGain = finalSim.applyPlay(cand.id, cand.chartVF, cand.netVFGain);
+    const currentCumulative = finalSim.getProfileVF();
+
 
     const alternatives: RoadmapStepAlternative[] = unusedCandidates
       .filter((alt) => {
@@ -296,7 +388,7 @@ function assembleSteps(
       targetLamp: cand.targetLamp,
       targetGrade: cand.targetGrade || 'S',
       chartVF: cand.chartVF,
-      netVFGain: cand.netVFGain,
+      netVFGain: actualGain > 0 ? actualGain : cand.netVFGain,
       cumulativeProfileVF: currentCumulative,
       completed: false,
       rationale: cand.rationale,
@@ -308,8 +400,8 @@ function assembleSteps(
 
   return {
     steps,
-    finalVF: currentCumulative,
-    targetReached: currentCumulative >= targetVF,
+    finalVF: finalSim.getProfileVF(),
+    targetReached: finalSim.getProfileVF() >= targetVF,
   };
 }
 
@@ -323,10 +415,11 @@ function tryGeneratePlan(
   targetLamp: SDVXLamp,
   minFeasibility: number,
   maxSteps: number,
+  initialTop50?: Top50Slot[],
 ) {
   const candidates = buildCandidates(upscores, farmables, version, strategy, targetLamp, minFeasibility);
   sortCandidates(candidates, strategy);
-  return assembleSteps(candidates, currentVF, targetVF, maxSteps, minFeasibility);
+  return assembleSteps(candidates, currentVF, targetVF, maxSteps, minFeasibility, initialTop50);
 }
 
 /**
@@ -347,6 +440,7 @@ function maximizeFeasibleWithHigherStuff(
   targetLamp: SDVXLamp,
   minFeasibility: number,
   maxSteps: number = MAX_ROADMAP_STEPS,
+  initialTop50?: Top50Slot[],
 ): RoadmapStepList {
   const stepLimit = Math.max(1, maxSteps);
 
@@ -378,11 +472,6 @@ function maximizeFeasibleWithHigherStuff(
     const startM = Math.min(stepLimit, feasiblePool.length);
 
     // Target pushers should only be slightly less feasible, not a lot less (for example, 90 -> 80).
-    // Test progressively:
-    // Tier 1: slightly less feasible (within ~15% of baseline, e.g. 90 -> 75, capturing 80%+)
-    // Tier 2: moderately less feasible (within ~25% of baseline, e.g. 90 -> 65)
-    // Tier 3: stretch tier (within ~35% of baseline, e.g. 90 -> 55)
-    // Tier 4: full fallback to 0 (so the roadmap ALWAYS finds a way to reach target VF)
     const pusherCutoffs = [
       Math.max(45, baselineFeas - 15),
       Math.max(35, baselineFeas - 25),
@@ -397,22 +486,27 @@ function maximizeFeasibleWithHigherStuff(
       const higherPool = sortPusherCandidates(eligibleHigher);
 
       for (let m = startM; m >= 0; m--) {
+        const sim = new SimulatedTop50(initialTop50, currentVF);
         const selected: CandidateItem[] = [];
         const usedChartIDs = new Set<string>();
-        let runningVF = currentVF;
 
         // Add up to m feasible candidates
         for (let i = 0; i < m && i < feasiblePool.length; i++) {
           const cand = feasiblePool[i];
           if (usedChartIDs.has(cand.id)) continue;
+
+          const gain = sim.evaluateGain(cand.id, cand.chartVF, cand.netVFGain);
+          if (gain <= 0.0001) continue;
+
+          sim.applyPlay(cand.id, cand.chartVF, cand.netVFGain);
           usedChartIDs.add(cand.id);
-          runningVF = Math.round((runningVF + cand.netVFGain) * 1000) / 1000;
-          selected.push({ ...cand, isHigherStuff: false });
-          if (runningVF >= targetVF) {
+          selected.push({ ...cand, netVFGain: gain, isHigherStuff: false });
+
+          if (sim.getProfileVF() >= targetVF) {
             // Reached target entirely with feasible plays!
             return {
               selected,
-              finalVF: runningVF,
+              finalVF: sim.getProfileVF(),
               targetReached: true,
               lamp,
             };
@@ -423,12 +517,18 @@ function maximizeFeasibleWithHigherStuff(
         for (const cand of higherPool) {
           if (selected.length >= stepLimit) break;
           if (usedChartIDs.has(cand.id)) continue;
+
+          const gain = sim.evaluateGain(cand.id, cand.chartVF, cand.netVFGain);
+          if (gain <= 0.0001) continue;
+
+          sim.applyPlay(cand.id, cand.chartVF, cand.netVFGain);
           usedChartIDs.add(cand.id);
-          runningVF = Math.round((runningVF + cand.netVFGain) * 1000) / 1000;
-          selected.push({ ...cand, isHigherStuff: true });
-          if (runningVF >= targetVF) break;
+          selected.push({ ...cand, netVFGain: gain, isHigherStuff: true });
+
+          if (sim.getProfileVF() >= targetVF) break;
         }
 
+        const runningVF = sim.getProfileVF();
         if (!bestBlend || runningVF > bestBlend.finalVF) {
           bestBlend = {
             steps: selected,
@@ -495,11 +595,13 @@ function maximizeFeasibleWithHigherStuff(
   );
 
   const steps: RoadmapStep[] = [];
-  let currentCumulative = currentVF;
+  const finalSim = new SimulatedTop50(initialTop50, currentVF);
 
   for (let i = 0; i < rawCandidates.length; i++) {
     const cand = rawCandidates[i];
-    currentCumulative = Math.round((currentCumulative + cand.netVFGain) * 1000) / 1000;
+    const actualGain = finalSim.applyPlay(cand.id, cand.chartVF, cand.netVFGain);
+    const currentCumulative = finalSim.getProfileVF();
+
     const isPusher = cand.isHigherStuff ?? false;
 
     const alternatives: RoadmapStepAlternative[] = unusedCandidates
@@ -550,14 +652,14 @@ function maximizeFeasibleWithHigherStuff(
       targetLamp: cand.targetLamp,
       targetGrade: cand.targetGrade || 'S',
       chartVF: cand.chartVF,
-      netVFGain: cand.netVFGain,
+      netVFGain: actualGain > 0 ? actualGain : cand.netVFGain,
       cumulativeProfileVF: currentCumulative,
       completed: false,
       rationale: isPusher
-        ? `Strategic high-yield target pusher (+${cand.netVFGain.toFixed(3)} VF, ${cand.feasibilityPercent}% feas) to bridge your profile to ${targetVF.toFixed(3)} VF.`
+        ? `Strategic high-yield target pusher (+${(actualGain > 0 ? actualGain : cand.netVFGain).toFixed(3)} VF, ${cand.feasibilityPercent}% feas) to bridge your profile to ${targetVF.toFixed(3)} VF.`
         : cand.rationale,
       primaryFactor: isPusher
-        ? `Target Pusher (+${cand.netVFGain.toFixed(3)} VF)`
+        ? `Target Pusher (+${(actualGain > 0 ? actualGain : cand.netVFGain).toFixed(3)} VF)`
         : cand.primaryFactor,
       feasibility: cand.feasibility,
       alternatives,
@@ -599,6 +701,7 @@ export function generateRoadmap(
   targetLamp: SDVXLamp = 'EXCESSIVE CLEAR',
   minFeasibility: number = 0,
   maxSteps: number = MAX_ROADMAP_STEPS,
+  existingTop50?: Top50Slot[] | { chartID: string; vf: number }[],
 ): RoadmapStepList {
   const deltaNeeded = Math.max(0, targetVF - currentVF);
 
@@ -613,6 +716,9 @@ export function generateRoadmap(
     return empty;
   }
 
+  const initialTop50 =
+    existingTop50 && existingTop50.length > 0 ? (existingTop50 as Top50Slot[]) : undefined;
+
   // If strategy is most-feasible or upscores-first: maximize feasible stuff and fill with higher stuff!
   if (strategy === 'most-feasible' || strategy === 'upscores-first') {
     return maximizeFeasibleWithHigherStuff(
@@ -625,6 +731,7 @@ export function generateRoadmap(
       targetLamp,
       minFeasibility,
       maxSteps,
+      initialTop50,
     );
   }
 
@@ -639,6 +746,7 @@ export function generateRoadmap(
     targetLamp,
     minFeasibility,
     maxSteps,
+    initialTop50,
   );
 
   if (firstPlan.targetReached || firstPlan.steps.length === 0) {
@@ -663,5 +771,7 @@ export function generateRoadmap(
     targetLamp,
     minFeasibility,
     maxSteps,
+    initialTop50,
   );
 }
+

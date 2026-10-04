@@ -9,7 +9,8 @@ import { ExportModal } from './components/ExportModal';
 import { TachiClient } from './api/tachiClient';
 import { analyzeProfile, AnalyzerResult } from './core/analyzer';
 import { findFarmables, getDefaultLevelRange } from './core/farmable';
-import { generateRoadmap } from './core/roadmap';
+import { generateRoadmap, MAX_ROADMAP_STEPS } from './core/roadmap';
+
 import {
   GameVersionFilter,
   KamaiChart,
@@ -299,8 +300,11 @@ export const App: React.FC = () => {
       roadmapStrategy,
       roadmapTargetLamp,
       40,
+      MAX_ROADMAP_STEPS,
+      analysis.top50Scores.map((s) => ({ chartID: s.chart.chartID, vf: s.vf })),
     );
   }, [analysis, targetVF, activeUpscores, farmables, version, roadmapStrategy, roadmapTargetLamp]);
+
 
   const roadmapSteps = useMemo(() => {
     let runningVF = analysis ? analysis.currentProfileVF : 0;

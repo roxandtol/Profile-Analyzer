@@ -1,7 +1,7 @@
 import { TachiClient } from './api/tachiClient';
 import { analyzeProfile } from './core/analyzer';
 import { findFarmables } from './core/farmable';
-import { generateRoadmap } from './core/roadmap';
+import { generateRoadmap, MAX_ROADMAP_STEPS } from './core/roadmap';
 import { GameVersionFilter, RoadmapStrategy, VolforceVersion } from './core/types';
 import { vfToClass } from './core/volforce';
 import { formatChartLevel } from './utils/format';
@@ -222,7 +222,10 @@ async function main() {
       args.strategy,
       args.lamp,
       args.minFeasibility,
+      MAX_ROADMAP_STEPS,
+      analysis.top50Scores.map((s) => ({ chartID: s.chart.chartID, vf: s.vf })),
     );
+
 
     console.log(`\n🚀 RECOMMENDED ROADMAP TO REACH ${targetVF.toFixed(3)} VF (Strategy: ${args.strategy.toUpperCase()}, Target Lamp: ${args.lamp}, Min Feas: ≥${args.minFeasibility}%):`);
     printDivider();

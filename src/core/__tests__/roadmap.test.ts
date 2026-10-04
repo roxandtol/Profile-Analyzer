@@ -484,6 +484,100 @@ describe('Roadmap Generator Strategies & Feasibility Priority', () => {
       expect(p.chart.chartID).not.toBe('c-extreme');
     }
   });
+
+  it('respects existing scores in Top 50, fills remaining slots with 18 S UCs, and bridges with 19 S pushers', () => {
+    // 11x 18 S UC (0.392), 1x 19 S Maxxive (0.410), 1x 20 AAA+ Clear (0.399), 37x lower (0.350)
+    const existingTop50: { chartID: string; vf: number }[] = [
+      { chartID: 'c-19-maxxive', vf: 0.410 },
+      { chartID: 'c-20-aaa-clear', vf: 0.399 },
+      ...Array.from({ length: 11 }, (_, i) => ({ chartID: `c-existing-18-${i}`, vf: 0.392 })),
+      ...Array.from({ length: 37 }, (_, i) => ({ chartID: `c-existing-low-${i}`, vf: 0.350 })),
+    ];
+
+    const currentVF = Math.round(existingTop50.reduce((acc, s) => acc + s.vf, 0) * 1000) / 1000;
+    // Total current VF: 0.410 + 0.399 + 11*0.392 (4.312) + 37*0.350 (12.950) = 18.071 VF
+    expect(currentVF).toBe(18.071);
+
+    // Provide 50 farmable 18 S UCs (0.392 VF, 85% feas)
+    const farmable18s: FarmableOpportunity[] = Array.from({ length: 50 }, (_, i) => ({
+      id: `f-18-${i}`,
+      chart: { chartID: `chart-18-${i}`, difficulty: 'MXM', level: '18', levelNum: 18.0 },
+      song: { id: `song-18-${i}`, title: `18 UC Song ${i}`, artist: 'Artist' },
+      levelNum: 18.0,
+      difficulty: 'MXM',
+      individualDifference: false,
+      projectedScore: 9_900_000,
+      projectedLamp: 'ULTIMATE CHAIN',
+      projectedVF: 0.392,
+      netVFGain: 0.042, // vs initial 0.350 cutoff
+      farmabilityScore: 200,
+      isPlayed: false,
+      primaryAdvantage: 'Feasible 18 UC',
+      feasibility: {
+        expectedPlayerVF: 18.0,
+        userVF: 18.0,
+        vfFitDelta: 0,
+        feasibilityPercent: 85,
+        feasibilityTier: 'VERY_HIGH',
+        label: 'Very High',
+        explanation: 'Comfortable',
+      },
+    }));
+
+    // Provide 20 farmable 19 S pushers (0.410 VF, 78% feas)
+    const pusher19s: FarmableOpportunity[] = Array.from({ length: 20 }, (_, i) => ({
+      id: `p-19-${i}`,
+      chart: { chartID: `chart-19-${i}`, difficulty: 'MXM', level: '19', levelNum: 19.0 },
+      song: { id: `song-19-${i}`, title: `19 S Song ${i}`, artist: 'Artist' },
+      levelNum: 19.0,
+      difficulty: 'MXM',
+      individualDifference: false,
+      projectedScore: 9_900_000,
+      projectedLamp: 'EXCESSIVE CLEAR',
+      projectedVF: 0.410,
+      netVFGain: 0.060,
+      farmabilityScore: 190,
+      isPlayed: false,
+      primaryAdvantage: 'High Yield Pusher',
+      feasibility: {
+        expectedPlayerVF: 19.0,
+        userVF: 18.0,
+        vfFitDelta: -1.0,
+        feasibilityPercent: 78,
+        feasibilityTier: 'VERY_HIGH',
+        label: 'Very High',
+        explanation: 'Target Pusher',
+      },
+    }));
+
+    // Target: 19.800 VF (exceeds what 37x 18 UCs can give alone, which caps at 19.625)
+    const roadmap = generateRoadmap(
+      currentVF,
+      19.800,
+      [],
+      [...farmable18s, ...pusher19s],
+      'vf6',
+      'most-feasible',
+      'ULTIMATE CHAIN',
+      60,
+      50,
+      existingTop50,
+    );
+
+    expect(roadmap.targetReached).toBe(true);
+    // Should NOT have more than 50 steps
+    expect(roadmap.length).toBeLessThanOrEqual(50);
+
+    // Feasible 18 UCs cannot exceed 37 steps because the 13 existing top scores are already >= 0.392!
+    expect(roadmap.feasibleCount).toBeLessThanOrEqual(37);
+    expect(roadmap.higherStuffCount).toBeGreaterThan(0);
+
+    // Existing high charts (c-19-maxxive, c-20-aaa-clear, c-existing-18-*) are preserved
+    const chartIdsInRoadmap = new Set(roadmap.map((s) => s.chart.chartID));
+    expect(chartIdsInRoadmap.has('c-19-maxxive')).toBe(false);
+    expect(chartIdsInRoadmap.has('c-20-aaa-clear')).toBe(false);
+  });
 });
+
 
 
