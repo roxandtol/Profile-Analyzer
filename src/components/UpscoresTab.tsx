@@ -290,7 +290,7 @@ export const UpscoresTab: React.FC<UpscoresTabProps> = ({ upscores, version }) =
                     <span className="text-[10px] text-gray-500 font-mono whitespace-nowrap">
                       Goal Lamp: {u.targetLamp}
                     </span>
-                    {u.pucTierText && (
+                    {u.targetLamp === 'PERFECT ULTIMATE CHAIN' && u.pucTierText && (
                       <a
                         href="https://sdvx.maya2silence.com/table"
                         target="_blank"
@@ -441,7 +441,7 @@ export const UpscoresTab: React.FC<UpscoresTabProps> = ({ upscores, version }) =
                           <span className={`text-[10px] block whitespace-nowrap ${u.targetLamp === 'PERFECT ULTIMATE CHAIN' ? 'text-yellow-400 font-bold' : 'text-gray-400'}`}>
                             Goal Lamp: {u.targetLamp}
                           </span>
-                          {u.pucTierText && (
+                          {u.targetLamp === 'PERFECT ULTIMATE CHAIN' && u.pucTierText && (
                             <a
                               href="https://sdvx.maya2silence.com/table"
                               target="_blank"

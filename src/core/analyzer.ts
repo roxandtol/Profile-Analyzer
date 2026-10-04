@@ -25,6 +25,7 @@ import { isChartInVersion } from './versionFilter';
 export interface AnalyzeProfileOptions {
   version?: VolforceVersion;
   versionFilter?: GameVersionFilter;
+  enablePUC?: boolean;
 }
 
 export interface AnalyzerResult {
@@ -45,6 +46,7 @@ export function analyzeProfile(
   songs: KamaiSong[],
   versionOrOptions: VolforceVersion | AnalyzeProfileOptions = 'vf7',
   filterArg?: GameVersionFilter,
+  enablePUCArg?: boolean,
 ): AnalyzerResult {
   const version: VolforceVersion =
     typeof versionOrOptions === 'string'
@@ -58,6 +60,13 @@ export function analyzeProfile(
       : version === 'vf6'
       ? 'exceed'
       : 'all');
+
+  const enablePUC: boolean =
+    enablePUCArg !== undefined
+      ? enablePUCArg
+      : typeof versionOrOptions === 'object' && versionOrOptions.enablePUC !== undefined
+      ? versionOrOptions.enablePUC
+      : false;
 
   const chartMap = new Map<string, KamaiChart>();
   for (const c of charts) {
@@ -417,6 +426,7 @@ export function analyzeProfile(
     // Opportunity 3D: Lamp Upgrade to Perfect Ultimate Chain (PUC)
     // Leverages official tables from sdvx.maya2silence.com/table
     if (
+      enablePUC &&
       s.lamp !== 'PERFECT ULTIMATE CHAIN' &&
       (
         (s.score >= 9_950_000 && hasSufficientPUCDensity(effectiveVF, s.chart)) ||
@@ -426,7 +436,7 @@ export function analyzeProfile(
     ) {
       const targetScore = 10_000_000;
       const targetLamp: SDVXLamp = 'PERFECT ULTIMATE CHAIN';
-      const pucInfo = getPucChartInfo(s.chart.data?.inGameID, s.chart.difficulty, s.song.title);
+      const pucInfo = getPucChartInfo(s.song.title, s.chart.difficulty, level);
       const effectiveLevel = version === 'vf7' && pucInfo?.constant ? pucInfo.constant : level;
       const targetVF = calculateChartVF(targetScore, targetLamp, effectiveLevel, version);
 

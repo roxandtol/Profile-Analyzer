@@ -33,6 +33,8 @@ interface RoadmapViewProps {
   version: VolforceVersion;
   strategy: RoadmapStrategy;
   targetLamp?: SDVXLamp;
+  enablePUC?: boolean;
+  onTogglePUC?: (enabled: boolean) => void;
   onStrategyChange: (strategy: RoadmapStrategy) => void;
   onTargetLampChange?: (lamp: SDVXLamp) => void;
   onChangeStepLamp?: (stepNumber: number, lamp: SDVXLamp) => void;
@@ -124,6 +126,8 @@ export const RoadmapView: React.FC<RoadmapViewProps> = ({
   version,
   strategy,
   targetLamp = 'EXCESSIVE CLEAR',
+  enablePUC = false,
+  onTogglePUC,
   onStrategyChange,
   onTargetLampChange,
   onChangeStepLamp,
@@ -207,14 +211,39 @@ export const RoadmapView: React.FC<RoadmapViewProps> = ({
         {/* Row 2: Target Lamp Goal Selector */}
         {onTargetLampChange && (
           <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-[#1a2336]">
-            <div className="flex items-center gap-2">
-              <Award className="w-4 h-4 text-amber-400 shrink-0" />
-              <span className="text-xs font-bold text-gray-200 uppercase tracking-wider font-mono">
-                Target Lamp Goal:
-              </span>
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="flex items-center gap-2">
+                <Award className="w-4 h-4 text-amber-400 shrink-0" />
+                <span className="text-xs font-bold text-gray-200 uppercase tracking-wider font-mono">
+                  Target Lamp Goal:
+                </span>
+              </div>
+
+              {onTogglePUC && (
+                <button
+                  type="button"
+                  onClick={() => onTogglePUC(!enablePUC)}
+                  className={`px-2.5 py-1 rounded text-[11px] font-mono font-bold transition-all border flex items-center gap-1.5 ${
+                    enablePUC
+                      ? 'bg-yellow-500/20 text-yellow-300 border-yellow-500/50 shadow-sm'
+                      : 'bg-[#141b2d] text-gray-400 border-[#22304d] hover:text-gray-300 hover:border-gray-500'
+                  }`}
+                  title={
+                    enablePUC
+                      ? 'PUC calculations enabled (maya2silence tables). Click to switch to legacy mode without PUCs.'
+                      : 'Legacy mode (no PUC goals). Click to enable PUC calculations.'
+                  }
+                >
+                  <span>👑 PUC Mode:</span>
+                  <span className={enablePUC ? 'text-yellow-400' : 'text-gray-500 font-semibold'}>
+                    {enablePUC ? 'ON' : 'OFF (Legacy)'}
+                  </span>
+                </button>
+              )}
             </div>
+
             <div className="flex flex-wrap gap-2">
-              {TARGET_LAMPS.map((l) => {
+              {TARGET_LAMPS.filter((l) => enablePUC || l.id !== 'PERFECT ULTIMATE CHAIN').map((l) => {
                 const isActive = targetLamp === l.id;
                 const coef = version === 'vf7' ? l.coefVF7 : l.coefVF6;
                 return (
@@ -460,7 +489,7 @@ export const RoadmapView: React.FC<RoadmapViewProps> = ({
                         Pusher
                       </span>
                     )}
-                    {step.pucTierText && (
+                    {enablePUC && step.targetLamp === 'PERFECT ULTIMATE CHAIN' && step.pucTierText && (
                       <a
                         href="https://sdvx.maya2silence.com/table"
                         target="_blank"
@@ -561,19 +590,21 @@ export const RoadmapView: React.FC<RoadmapViewProps> = ({
                         <span className="sm:hidden">UC</span>
                         <span className="hidden sm:inline">UC ({version === 'vf7' ? '106%' : '105%'})</span>
                       </button>
-                      <button
-                        type="button"
-                        onClick={() => onChangeStepLamp?.(step.stepNumber, 'PERFECT ULTIMATE CHAIN')}
-                        className={`px-1.5 sm:px-2 py-0.5 rounded text-[9px] sm:text-[10px] font-mono font-bold transition-all border shrink-0 ${
-                          step.targetLamp === 'PERFECT ULTIMATE CHAIN'
-                            ? 'bg-yellow-500/25 text-yellow-400 border-yellow-500/60 shadow-sm'
-                            : 'border-transparent text-gray-500 hover:text-gray-300'
-                        }`}
-                        title="Perfect Ultimate Chain - 10,000,000 pts (110% lamp coefficient from maya2silence tables)"
-                      >
-                        <span className="sm:hidden">PUC</span>
-                        <span className="hidden sm:inline">PUC (110%)</span>
-                      </button>
+                      {enablePUC && (
+                        <button
+                          type="button"
+                          onClick={() => onChangeStepLamp?.(step.stepNumber, 'PERFECT ULTIMATE CHAIN')}
+                          className={`px-1.5 sm:px-2 py-0.5 rounded text-[9px] sm:text-[10px] font-mono font-bold transition-all border shrink-0 ${
+                            step.targetLamp === 'PERFECT ULTIMATE CHAIN'
+                              ? 'bg-yellow-500/25 text-yellow-400 border-yellow-500/60 shadow-sm'
+                              : 'border-transparent text-gray-500 hover:text-gray-300'
+                          }`}
+                          title="Perfect Ultimate Chain - 10,000,000 pts (110% lamp coefficient from maya2silence tables)"
+                        >
+                          <span className="sm:hidden">PUC</span>
+                          <span className="hidden sm:inline">PUC (110%)</span>
+                        </button>
+                      )}
                     </div>
 
                     <span className="text-gray-600 hidden sm:inline">|</span>
@@ -661,7 +692,7 @@ export const RoadmapView: React.FC<RoadmapViewProps> = ({
                                       ? 'EXC'
                                       : 'CLR'}
                                   </span>
-                                  {alt.pucTierText && (
+                                  {enablePUC && alt.targetLamp === 'PERFECT ULTIMATE CHAIN' && alt.pucTierText && (
                                     <span
                                       className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-yellow-500/20 text-yellow-300 border border-yellow-500/40"
                                       title="maya2silence PUC Table Tier"

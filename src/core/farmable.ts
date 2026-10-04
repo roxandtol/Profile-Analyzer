@@ -25,6 +25,7 @@ export interface FarmableOptions {
   versionFilter?: GameVersionFilter;
   targetLamp?: SDVXLamp;
   minFeasibility?: number;
+  enablePUC?: boolean;
 }
 
 /**
@@ -74,10 +75,11 @@ export function findFarmables(
     versionFilter = version === 'vf6' ? 'exceed' : 'all',
     targetLamp = 'EXCESSIVE CLEAR',
     minFeasibility = 0,
+    enablePUC = options.enablePUC ?? (options.targetLamp === 'PERFECT ULTIMATE CHAIN'),
   } = options;
 
   const results: FarmableOpportunity[] = [];
-  const targetScore = targetLamp === 'PERFECT ULTIMATE CHAIN' ? 10_000_000 : 9_900_000;
+  const targetScore = (enablePUC && targetLamp === 'PERFECT ULTIMATE CHAIN') ? 10_000_000 : 9_900_000;
 
   for (const chart of allCharts) {
     const levelNum = chart.levelNum || parseFloat(chart.level) || 0;
@@ -105,10 +107,6 @@ export function findFarmables(
         artist: 'Unknown Artist',
       };
 
-    const pucInfo = getPucChartInfo(chart.data?.inGameID, chart.difficulty, song.title);
-    const effectiveLevelNum =
-      version === 'vf7' && pucInfo?.constant ? pucInfo.constant : levelNum;
-
     // Check if user already played this chart
     const existingPB = existingPBsMap.get(chart.chartID);
     let netGain = 0;
@@ -129,6 +127,30 @@ export function findFarmables(
       chartTargetLamp = 'MAXXIVE CLEAR';
     }
 
+    if (chartTargetLamp === 'PERFECT ULTIMATE CHAIN' && !enablePUC) {
+      chartTargetLamp = 'MAXXIVE CLEAR';
+    }
+
+    // "Only use puc rating for stuff that is really close and when going for a puc"
+    if (chartTargetLamp === 'PERFECT ULTIMATE CHAIN') {
+      if (existingPB && existingScore !== undefined) {
+        const isClose = existingScore >= 9_950_000 || existingLamp === 'ULTIMATE CHAIN';
+        if (!isClose) continue;
+      }
+    }
+
+    // Only query PUC metadata if enablePUC is active and we are specifically targeting PUC
+    const pucInfo =
+      enablePUC && chartTargetLamp === 'PERFECT ULTIMATE CHAIN'
+        ? getPucChartInfo(song.title, chart.difficulty, levelNum)
+        : null;
+
+    // Normal play VF always uses the official decimal levelNum
+    const effectiveLevelNum =
+      enablePUC && chartTargetLamp === 'PERFECT ULTIMATE CHAIN' && version === 'vf7' && pucInfo?.constant
+        ? pucInfo.constant
+        : levelNum;
+
     const projectedVF = calculateChartVF(targetScore, chartTargetLamp, effectiveLevelNum, version);
 
     if (existingPB) {
@@ -143,6 +165,7 @@ export function findFarmables(
         ) {
           // Keep as UC upgrade candidate
         } else if (
+          enablePUC &&
           chartTargetLamp === 'PERFECT ULTIMATE CHAIN' &&
           existingLamp !== 'PERFECT ULTIMATE CHAIN'
         ) {
@@ -159,10 +182,16 @@ export function findFarmables(
         version,
       );
 
-      if (top50ChartIDs.has(chart.chartID)) {
-        netGain = projectedVF - existingVF;
+      const isTop50 =
+        top50ChartIDs.has(chart.chartID) ||
+        (existingVF > 0 && existingVF >= top50Cutoff);
+
+      if (isTop50) {
+        netGain = Math.max(0, projectedVF - existingVF);
       } else {
-        netGain = Math.max(0, projectedVF - top50Cutoff);
+        const displacementGain = Math.max(0, projectedVF - top50Cutoff);
+        const upgradeGain = Math.max(0, projectedVF - existingVF);
+        netGain = Math.min(displacementGain, upgradeGain);
       }
     } else {
       // Unplayed chart: pushes into top 50 displacing cutoff
@@ -248,14 +277,17 @@ export function findFarmables(
       levelNum,
       difficulty: chart.difficulty,
       sTier: chart.data?.sTier,
-      clearTier: chart.data?.clearTier,
-      pucTier: pucInfo
-        ? { text: formatPucTierBadge(pucInfo), value: pucInfo.constant }
-        : chart.data?.pucTier,
-      pucConstant: pucInfo?.constant,
+      pucTier:
+        enablePUC && chartTargetLamp === 'PERFECT ULTIMATE CHAIN' && pucInfo
+          ? { text: formatPucTierBadge(pucInfo), value: pucInfo.constant }
+          : undefined,
+      pucConstant:
+        enablePUC && chartTargetLamp === 'PERFECT ULTIMATE CHAIN'
+          ? pucInfo?.constant
+          : undefined,
       individualDifference: individualDiff,
       projectedScore: targetScore,
-      projectedLamp: targetLamp,
+      projectedLamp: chartTargetLamp,
       projectedVF,
       netVFGain: Math.round(netGain * 1000) / 1000,
       farmabilityScore: Math.round(farmabilityScore * 10) / 10,

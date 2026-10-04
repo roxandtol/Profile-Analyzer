@@ -5,7 +5,7 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-function normalizeTitle(title) {
+export function normalizeTitle(title) {
   return title
     .toLowerCase()
     .replace(/&amp;/g, '&')
@@ -17,8 +17,8 @@ function normalizeTitle(title) {
 
 export async function syncPucTables() {
   const slugs = ['16p', '17p', '17.5p', '18p', '19p', '20p'];
-  const charts = {};
-  const titleToId = {};
+  const byTitleDiff = {};
+  const cidToKey = {};
 
   console.log('Fetching PUC tables from sdvx.maya2silence.com/table ...');
 
@@ -30,6 +30,7 @@ export async function syncPucTables() {
       throw new Error(`Failed to fetch ${url}: HTTP ${res.status}`);
     }
     const html = await res.text();
+    const tableLevel = parseFloat(slug);
 
     const parts = html.split(/<div class="tier_box"/);
     for (let i = 1; i < parts.length; i++) {
@@ -46,15 +47,15 @@ export async function syncPucTables() {
         /<div class="chart_data"[^>]+data-cid="(\d+)"[^>]+data-title="([^"]+)"(?:[^>]+data-ruby="([^"]*)")?(?:[^>]+data-artist="([^"]*)")?[^>]+data-diff_type="([^"]+)"[^>]+data-cons="([^"]+)"/g;
       let cm;
       while ((cm = chartRegex.exec(part)) !== null) {
-        const inGameID = parseInt(cm[1], 10);
+        const cid = cm[1];
         const rawTitle = cm[2].replace(/&amp;/g, '&').replace(/&#039;/g, "'").replace(/&quot;/g, '"');
         const diff = cm[5].toUpperCase();
         const constant = parseFloat(cm[6]);
-        const idKey = `${inGameID}:${diff}`;
         const titleKey = `${normalizeTitle(rawTitle)}:${diff}`;
+        const cidKey = `${cid}:${diff}`;
 
-        charts[idKey] = [constant, tierId, tierLabel, slug, rawTitle];
-        titleToId[titleKey] = idKey;
+        byTitleDiff[titleKey] = [constant, tierId, tierLabel, slug, rawTitle, tableLevel];
+        cidToKey[cidKey] = titleKey;
       }
     }
   }
@@ -66,9 +67,12 @@ export async function syncPucTables() {
 
   const payload = {
     updatedAt: new Date().toISOString(),
-    totalCharts: Object.keys(charts).length,
-    charts,
-    titleToId,
+    totalCharts: Object.keys(byTitleDiff).length,
+    byTitleDiff,
+    cidToKey,
+    // Keep charts and titleToId aliases for backwards compatibility with any existing imports
+    charts: byTitleDiff,
+    titleToId: Object.fromEntries(Object.keys(byTitleDiff).map((k) => [k, k])),
   };
 
   const outFile = path.join(outDir, 'pucTables.json');

@@ -1,26 +1,28 @@
 import pucRawData from '../data/pucTables.json';
 
 export interface PucChartInfo {
-  inGameID: number;
   difficulty: string;
   title: string;
   constant: number;
   tierId: string;
   tierLabel: string;
   tableSlug: string;
+  tableLevel?: number;
   easeScore: number; // 1 (hardest PUC) to 10 (easiest PUC)
 }
 
 interface CompactPucData {
   updatedAt: string;
   totalCharts: number;
-  charts: Record<string, [number, string, string, string, string]>; // [constant, tierId, tierLabel, slug, title]
-  titleToId: Record<string, string>;
+  byTitleDiff: Record<string, [number, string, string, string, string, number]>; // [constant, tierId, tierLabel, slug, title, tableLevel]
+  cidToKey?: Record<string, string>;
+  charts?: Record<string, [number, string, string, string, string, number]>;
+  titleToId?: Record<string, string>;
 }
 
 const pucData = pucRawData as unknown as CompactPucData;
 
-function normalizeTitle(title: string): string {
+export function normalizeTitle(title: string): string {
   return title
     .toLowerCase()
     .replace(/&amp;/g, '&')
@@ -93,52 +95,68 @@ export function calculatePucEaseScore(
 
 /**
  * Retrieves official PUC metadata from maya2silence tables for a chart.
+ * Uses title + difficulty matching and enforces level consistency so charts
+ * from one level are never cross-matched to tables from another.
  */
 export function getPucChartInfo(
-  inGameID?: number,
+  titleOrInGameID?: string | number,
   difficulty?: string,
-  title?: string,
+  titleOrLevel?: string | number,
+  maybeLevelNum?: number,
 ): PucChartInfo | null {
+  let title: string | undefined;
+  let levelNum: number | undefined;
+
+  if (typeof titleOrInGameID === 'string') {
+    title = titleOrInGameID;
+    if (typeof titleOrLevel === 'number') {
+      levelNum = titleOrLevel;
+    }
+  } else if (typeof titleOrLevel === 'string') {
+    // Called as getPucChartInfo(inGameID, difficulty, title, levelNum)
+    title = titleOrLevel;
+    levelNum = maybeLevelNum;
+  }
+
   const diff = (difficulty || 'MXM').toUpperCase();
+  let raw: [number, string, string, string, string, number] | undefined;
 
-  // 1. Primary lookup by inGameID + difficulty
-  if (inGameID !== undefined) {
-    const raw = pucData.charts[`${inGameID}:${diff}`];
-    if (raw) {
-      const [constant, tierId, tierLabel, tableSlug, chartTitle] = raw;
-      return {
-        inGameID,
-        difficulty: diff,
-        title: chartTitle,
-        constant,
-        tierId,
-        tierLabel,
-        tableSlug,
-        easeScore: calculatePucEaseScore(tableSlug, tierId, constant),
-      };
-    }
-  }
-
-  // 2. Secondary lookup by normalized title + difficulty
+  // 1. Primary lookup by normalized title + difficulty
   if (title) {
-    const idKey = pucData.titleToId[`${normalizeTitle(title)}:${diff}`];
-    if (idKey && pucData.charts[idKey]) {
-      const [constant, tierId, tierLabel, tableSlug, chartTitle] = pucData.charts[idKey];
-      const parsedId = parseInt(idKey.split(':')[0], 10);
-      return {
-        inGameID: isNaN(parsedId) ? 0 : parsedId,
-        difficulty: diff,
-        title: chartTitle,
-        constant,
-        tierId,
-        tierLabel,
-        tableSlug,
-        easeScore: calculatePucEaseScore(tableSlug, tierId, constant),
-      };
+    const titleKey = `${normalizeTitle(title)}:${diff}`;
+    raw = pucData.byTitleDiff?.[titleKey] || pucData.charts?.[titleKey];
+  }
+
+  // 2. Fallback lookup for unit tests specifying maya2silence cid without title
+  if (!raw && typeof titleOrInGameID === 'number') {
+    const cidKey = `${titleOrInGameID}:${diff}`;
+    const mappedKey = pucData.cidToKey?.[cidKey];
+    if (mappedKey) {
+      raw = pucData.byTitleDiff?.[mappedKey] || pucData.charts?.[mappedKey];
     }
   }
 
-  return null;
+  if (!raw) return null;
+
+  const [constant, tierId, tierLabel, tableSlug, chartTitle, tableLevel] = raw;
+
+  // Strict level match: prevent Level 18 tables matching Level 19 charts and vice-versa
+  if (levelNum !== undefined && levelNum > 0 && tableLevel !== undefined) {
+    if (Math.floor(levelNum) !== Math.floor(tableLevel)) {
+      return null;
+    }
+  }
+
+  return {
+    difficulty: diff,
+    title: chartTitle,
+    constant,
+    tierId,
+    tierLabel,
+    tableSlug,
+    tableLevel,
+    easeScore: calculatePucEaseScore(tableSlug, tierId, constant),
+  };
 }
 
 /**

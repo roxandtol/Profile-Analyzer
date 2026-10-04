@@ -83,7 +83,7 @@ export class SimulatedTop50 {
   /**
    * Evaluates the net profile VF gain if this chart is achieved at targetVF.
    */
-  evaluateGain(chartID: string, targetVF: number, fallbackGain: number): number {
+  evaluateGain(chartID: string, targetVF: number, fallbackGain: number, currentVF?: number): number {
     if (!this.slots) {
       return fallbackGain;
     }
@@ -92,19 +92,24 @@ export class SimulatedTop50 {
       return Math.max(0, Math.round((targetVF - this.slots[existingIdx].vf) * 1000) / 1000);
     }
     const lowest = this.slots[49].vf;
-    return Math.max(0, Math.round((targetVF - lowest) * 1000) / 1000);
+    let gain = Math.max(0, Math.round((targetVF - lowest) * 1000) / 1000);
+    if (currentVF !== undefined && currentVF > 0) {
+      const maxUpgradeGain = Math.max(0, Math.round((targetVF - currentVF) * 1000) / 1000);
+      gain = Math.min(gain, maxUpgradeGain);
+    }
+    return gain;
   }
 
   /**
    * Applies the play to the Top 50 buffer, updating or displacing the lowest slot.
    * Returns actual net profile gain achieved.
    */
-  applyPlay(chartID: string, targetVF: number, fallbackGain: number): number {
+  applyPlay(chartID: string, targetVF: number, fallbackGain: number, currentVF?: number): number {
     if (!this.slots) {
       this.runningVF = Math.round((this.runningVF + fallbackGain) * 1000) / 1000;
       return fallbackGain;
     }
-    const gain = this.evaluateGain(chartID, targetVF, fallbackGain);
+    const gain = this.evaluateGain(chartID, targetVF, fallbackGain, currentVF);
     if (gain <= 0.0001) return 0;
 
     const existingIdx = this.slots.findIndex((s) => s.chartID === chartID);
@@ -164,39 +169,60 @@ function buildCandidates(
   strategy: RoadmapStrategy,
   effectiveLamp: SDVXLamp,
   minFeasibility: number,
+  enablePUC: boolean = false,
 ): CandidateItem[] {
   const candidates: CandidateItem[] = [];
+
+  const lampToUse = (!enablePUC && effectiveLamp === 'PERFECT ULTIMATE CHAIN')
+    ? 'MAXXIVE CLEAR'
+    : effectiveLamp;
 
   if (strategy !== 'farmables-only') {
     for (const u of upscores) {
       const feasPercent = u.feasibility?.feasibilityPercent ?? 50;
       if (minFeasibility > 0 && feasPercent < minFeasibility) continue;
 
-      let candTargetLamp = u.targetLamp || effectiveLamp;
+      let candTargetLamp = u.targetLamp || lampToUse;
       if (u.currentLamp === 'EXCESSIVE CLEAR' && candTargetLamp === 'EXCESSIVE CLEAR') {
         candTargetLamp = 'MAXXIVE CLEAR';
       }
-      if (effectiveLamp === 'PERFECT ULTIMATE CHAIN') {
+      if (lampToUse === 'PERFECT ULTIMATE CHAIN' && enablePUC) {
         candTargetLamp = 'PERFECT ULTIMATE CHAIN';
-      } else if (effectiveLamp === 'ULTIMATE CHAIN') {
+      } else if (lampToUse === 'ULTIMATE CHAIN') {
         candTargetLamp = 'ULTIMATE CHAIN';
-      } else if (effectiveLamp === 'MAXXIVE CLEAR' && candTargetLamp === 'EXCESSIVE CLEAR') {
+      } else if (lampToUse === 'MAXXIVE CLEAR' && candTargetLamp === 'EXCESSIVE CLEAR') {
         candTargetLamp = 'MAXXIVE CLEAR';
+      } else if (!enablePUC && candTargetLamp === 'PERFECT ULTIMATE CHAIN') {
+        candTargetLamp = 'MAXXIVE CLEAR';
+      }
+
+      // "Only use puc rating for stuff that is really close and when going for a puc"
+      if (candTargetLamp === 'PERFECT ULTIMATE CHAIN') {
+        if (!enablePUC) continue;
+        if (u.currentScore !== undefined && u.currentScore < 9_950_000 && u.currentLamp !== 'ULTIMATE CHAIN') {
+          continue;
+        }
       }
 
       const candTargetScore = candTargetLamp === 'PERFECT ULTIMATE CHAIN' ? 10_000_000 : u.targetScore;
 
       let extraGain = 0;
-      if (candTargetLamp !== (u.targetLamp || effectiveLamp) || candTargetScore !== u.targetScore) {
-        const baseVF = calculateChartVF(u.targetScore, u.targetLamp || effectiveLamp, u.levelNum, version);
+      if (candTargetLamp !== (u.targetLamp || lampToUse) || candTargetScore !== u.targetScore) {
+        const baseVF = calculateChartVF(u.targetScore, u.targetLamp || lampToUse, u.levelNum, version);
         const newVF = calculateChartVF(candTargetScore, candTargetLamp, u.levelNum, version);
         extraGain = Math.max(0, newVF - baseVF);
       }
       const upgradedVF = u.targetVF + extraGain;
       const netGain = Math.round((u.netVFGain + extraGain) * 1000) / 1000;
 
-      const pucInfo = getPucChartInfo(u.chart.data?.inGameID, u.chart.difficulty, u.song?.title);
-      const pucTierText = u.pucTierText || (pucInfo ? formatPucTierBadge(pucInfo) : undefined);
+      const pucInfo =
+        enablePUC && candTargetLamp === 'PERFECT ULTIMATE CHAIN'
+          ? getPucChartInfo(u.song?.title, u.chart.difficulty, u.levelNum)
+          : null;
+      const pucTierText =
+        enablePUC && candTargetLamp === 'PERFECT ULTIMATE CHAIN'
+          ? u.pucTierText || (pucInfo ? formatPucTierBadge(pucInfo) : undefined)
+          : undefined;
 
       candidates.push({
         id: u.chart.chartID,
@@ -230,31 +256,46 @@ function buildCandidates(
     const feasPercent = f.feasibility?.feasibilityPercent ?? 50;
     if (minFeasibility > 0 && feasPercent < minFeasibility) continue;
 
-    let farmTargetLamp = f.projectedLamp || effectiveLamp;
+    let farmTargetLamp = f.projectedLamp || lampToUse;
     if (f.existingLamp === 'EXCESSIVE CLEAR' && farmTargetLamp === 'EXCESSIVE CLEAR') {
       farmTargetLamp = 'MAXXIVE CLEAR';
     }
-    if (effectiveLamp === 'PERFECT ULTIMATE CHAIN') {
+    if (lampToUse === 'PERFECT ULTIMATE CHAIN' && enablePUC) {
       farmTargetLamp = 'PERFECT ULTIMATE CHAIN';
-    } else if (effectiveLamp === 'ULTIMATE CHAIN') {
+    } else if (lampToUse === 'ULTIMATE CHAIN') {
       farmTargetLamp = 'ULTIMATE CHAIN';
-    } else if (effectiveLamp === 'MAXXIVE CLEAR' && farmTargetLamp === 'EXCESSIVE CLEAR') {
+    } else if (lampToUse === 'MAXXIVE CLEAR' && farmTargetLamp === 'EXCESSIVE CLEAR') {
       farmTargetLamp = 'MAXXIVE CLEAR';
+    } else if (!enablePUC && farmTargetLamp === 'PERFECT ULTIMATE CHAIN') {
+      farmTargetLamp = 'MAXXIVE CLEAR';
+    }
+
+    if (farmTargetLamp === 'PERFECT ULTIMATE CHAIN') {
+      if (!enablePUC) continue;
+      if (f.existingScore !== undefined && f.existingScore < 9_950_000 && f.existingLamp !== 'ULTIMATE CHAIN') {
+        continue;
+      }
     }
 
     const farmTargetScore = farmTargetLamp === 'PERFECT ULTIMATE CHAIN' ? 10_000_000 : f.projectedScore;
 
     let extraGain = 0;
-    if (farmTargetLamp !== (f.projectedLamp || effectiveLamp) || farmTargetScore !== f.projectedScore) {
-      const baseVF = calculateChartVF(f.projectedScore, f.projectedLamp || effectiveLamp, f.levelNum, version);
+    if (farmTargetLamp !== (f.projectedLamp || lampToUse) || farmTargetScore !== f.projectedScore) {
+      const baseVF = calculateChartVF(f.projectedScore, f.projectedLamp || lampToUse, f.levelNum, version);
       const newVF = calculateChartVF(farmTargetScore, farmTargetLamp, f.levelNum, version);
       extraGain = Math.max(0, newVF - baseVF);
     }
     const upgradedVF = f.projectedVF + extraGain;
     const netGain = Math.round((f.netVFGain + extraGain) * 1000) / 1000;
 
-    const pucInfo = getPucChartInfo(f.chart.data?.inGameID, f.difficulty, f.song?.title);
-    const pucTierText = f.pucTier?.text || (pucInfo ? formatPucTierBadge(pucInfo) : undefined);
+    const pucInfo =
+      enablePUC && farmTargetLamp === 'PERFECT ULTIMATE CHAIN'
+        ? getPucChartInfo(f.song?.title, f.difficulty, f.levelNum)
+        : null;
+    const pucTierText =
+      enablePUC && farmTargetLamp === 'PERFECT ULTIMATE CHAIN'
+        ? f.pucTier?.text || (pucInfo ? formatPucTierBadge(pucInfo) : undefined)
+        : undefined;
 
     candidates.push({
       id: f.chart.chartID,
@@ -334,6 +375,8 @@ function assembleSteps(
   maxSteps: number,
   minFeasibility: number,
   initialTop50?: Top50Slot[],
+  enablePUC: boolean = false,
+  version: VolforceVersion = 'vf7',
 ): {
   steps: RoadmapStep[];
   finalVF: number;
@@ -348,10 +391,13 @@ function assembleSteps(
     if (selectedCandidates.length >= stepLimit) break;
     if (usedChartIDs.has(cand.id)) continue;
 
-    const gain = sim.evaluateGain(cand.id, cand.chartVF, cand.netVFGain);
+    const candCurrentVF = (cand.currentScore && cand.currentLamp)
+      ? calculateChartVF(cand.currentScore, cand.currentLamp, cand.levelNum, version)
+      : undefined;
+    const gain = sim.evaluateGain(cand.id, cand.chartVF, cand.netVFGain, candCurrentVF);
     if (gain <= 0.0001) continue;
 
-    sim.applyPlay(cand.id, cand.chartVF, cand.netVFGain);
+    sim.applyPlay(cand.id, cand.chartVF, cand.netVFGain, candCurrentVF);
     usedChartIDs.add(cand.id);
     selectedCandidates.push({ ...cand, netVFGain: gain });
 
@@ -364,9 +410,11 @@ function assembleSteps(
 
   for (let i = 0; i < selectedCandidates.length; i++) {
     const cand = selectedCandidates[i];
-    const actualGain = finalSim.applyPlay(cand.id, cand.chartVF, cand.netVFGain);
+    const candCurrentVF = (cand.currentScore && cand.currentLamp)
+      ? calculateChartVF(cand.currentScore, cand.currentLamp, cand.levelNum, version)
+      : undefined;
+    const actualGain = finalSim.applyPlay(cand.id, cand.chartVF, cand.netVFGain, candCurrentVF);
     const currentCumulative = finalSim.getProfileVF();
-
 
     const alternatives: RoadmapStepAlternative[] = unusedCandidates
       .filter((alt) => {
@@ -393,7 +441,7 @@ function assembleSteps(
         rationale: alt.rationale,
         primaryFactor: alt.primaryFactor,
         feasibility: alt.feasibility,
-        pucTierText: alt.pucTierText,
+        pucTierText: (enablePUC && alt.targetLamp === 'PERFECT ULTIMATE CHAIN') ? alt.pucTierText : undefined,
       }));
 
     steps.push({
@@ -414,7 +462,7 @@ function assembleSteps(
       primaryFactor: cand.primaryFactor,
       feasibility: cand.feasibility,
       alternatives,
-      pucTierText: cand.pucTierText,
+      pucTierText: (enablePUC && cand.targetLamp === 'PERFECT ULTIMATE CHAIN') ? cand.pucTierText : undefined,
     });
   }
 
@@ -436,10 +484,11 @@ function tryGeneratePlan(
   minFeasibility: number,
   maxSteps: number,
   initialTop50?: Top50Slot[],
+  enablePUC: boolean = false,
 ) {
-  const candidates = buildCandidates(upscores, farmables, version, strategy, targetLamp, minFeasibility);
+  const candidates = buildCandidates(upscores, farmables, version, strategy, targetLamp, minFeasibility, enablePUC);
   sortCandidates(candidates, strategy);
-  return assembleSteps(candidates, currentVF, targetVF, maxSteps, minFeasibility, initialTop50);
+  return assembleSteps(candidates, currentVF, targetVF, maxSteps, minFeasibility, initialTop50, enablePUC, version);
 }
 
 /**
@@ -461,13 +510,14 @@ function maximizeFeasibleWithHigherStuff(
   minFeasibility: number,
   maxSteps: number = MAX_ROADMAP_STEPS,
   initialTop50?: Top50Slot[],
+  enablePUC: boolean = false,
 ): RoadmapStepList {
   const stepLimit = Math.max(1, maxSteps);
 
   // Helper to attempt blending with a specific higher-stuff lamp and feasibility gate
   function tryBlend(lamp: SDVXLamp, feasCutoff: number) {
     // 1. Feasible Pool: all candidates with solid feasibility (>= 45% or quick wins)
-    const allFeasible = buildCandidates(upscores, farmables, version, strategy, targetLamp, feasCutoff);
+    const allFeasible = buildCandidates(upscores, farmables, version, strategy, targetLamp, feasCutoff, enablePUC);
     const feasiblePool = sortCandidates(
       allFeasible.filter((c) => c.feasibilityPercent >= 45 || c.isQuickWin),
       'most-feasible',
@@ -481,7 +531,7 @@ function maximizeFeasibleWithHigherStuff(
       : 85;
 
     // 2. Higher Pool: candidates with meaningful net gain (>= 0.008 VF)
-    const allHigher = buildCandidates(upscores, farmables, version, strategy, lamp, 0);
+    const allHigher = buildCandidates(upscores, farmables, version, strategy, lamp, 0, enablePUC);
 
     let bestBlend: {
       steps: CandidateItem[];
@@ -515,10 +565,13 @@ function maximizeFeasibleWithHigherStuff(
           const cand = feasiblePool[i];
           if (usedChartIDs.has(cand.id)) continue;
 
-          const gain = sim.evaluateGain(cand.id, cand.chartVF, cand.netVFGain);
+          const candCurrentVF = (cand.currentScore && cand.currentLamp)
+            ? calculateChartVF(cand.currentScore, cand.currentLamp, cand.levelNum, version)
+            : undefined;
+          const gain = sim.evaluateGain(cand.id, cand.chartVF, cand.netVFGain, candCurrentVF);
           if (gain <= 0.0001) continue;
 
-          sim.applyPlay(cand.id, cand.chartVF, cand.netVFGain);
+          sim.applyPlay(cand.id, cand.chartVF, cand.netVFGain, candCurrentVF);
           usedChartIDs.add(cand.id);
           selected.push({ ...cand, netVFGain: gain, isHigherStuff: false });
 
@@ -538,10 +591,13 @@ function maximizeFeasibleWithHigherStuff(
           if (selected.length >= stepLimit) break;
           if (usedChartIDs.has(cand.id)) continue;
 
-          const gain = sim.evaluateGain(cand.id, cand.chartVF, cand.netVFGain);
+          const candCurrentVF = (cand.currentScore && cand.currentLamp)
+            ? calculateChartVF(cand.currentScore, cand.currentLamp, cand.levelNum, version)
+            : undefined;
+          const gain = sim.evaluateGain(cand.id, cand.chartVF, cand.netVFGain, candCurrentVF);
           if (gain <= 0.0001) continue;
 
-          sim.applyPlay(cand.id, cand.chartVF, cand.netVFGain);
+          sim.applyPlay(cand.id, cand.chartVF, cand.netVFGain, candCurrentVF);
           usedChartIDs.add(cand.id);
           selected.push({ ...cand, netVFGain: gain, isHigherStuff: true });
 
@@ -609,7 +665,7 @@ function maximizeFeasibleWithHigherStuff(
   }
 
   // Phase 5: If target still not reached, escalate higher stuff lamp to PERFECT ULTIMATE CHAIN (110%)
-  if (!outcome.targetReached && targetLamp !== 'PERFECT ULTIMATE CHAIN') {
+  if (enablePUC && !outcome.targetReached && targetLamp !== 'PERFECT ULTIMATE CHAIN') {
     const outcomePUC = tryBlend('PERFECT ULTIMATE CHAIN', 0);
     if (outcomePUC.targetReached || outcomePUC.finalVF > outcome.finalVF) {
       outcome = outcomePUC;
@@ -618,7 +674,7 @@ function maximizeFeasibleWithHigherStuff(
 
   // Assemble full RoadmapStep list with alternatives and cumulative VF
   const rawCandidates = outcome.selected;
-  const unusedCandidates = buildCandidates(upscores, farmables, version, strategy, outcome.lamp, 0).filter(
+  const unusedCandidates = buildCandidates(upscores, farmables, version, strategy, outcome.lamp, 0, enablePUC).filter(
     (c) => !rawCandidates.some((sel) => sel.id === c.id),
   );
 
@@ -627,7 +683,10 @@ function maximizeFeasibleWithHigherStuff(
 
   for (let i = 0; i < rawCandidates.length; i++) {
     const cand = rawCandidates[i];
-    const actualGain = finalSim.applyPlay(cand.id, cand.chartVF, cand.netVFGain);
+    const candCurrentVF = (cand.currentScore && cand.currentLamp)
+      ? calculateChartVF(cand.currentScore, cand.currentLamp, cand.levelNum, version)
+      : undefined;
+    const actualGain = finalSim.applyPlay(cand.id, cand.chartVF, cand.netVFGain, candCurrentVF);
     const currentCumulative = finalSim.getProfileVF();
 
     const isPusher = cand.isHigherStuff ?? false;
@@ -667,7 +726,7 @@ function maximizeFeasibleWithHigherStuff(
         rationale: alt.rationale,
         primaryFactor: alt.primaryFactor,
         feasibility: alt.feasibility,
-        pucTierText: alt.pucTierText,
+        pucTierText: (enablePUC && alt.targetLamp === 'PERFECT ULTIMATE CHAIN') ? alt.pucTierText : undefined,
       }));
 
     steps.push({
@@ -695,7 +754,7 @@ function maximizeFeasibleWithHigherStuff(
       strategyUsed: strategy,
       strategyAdjusted: isPusher || outcome.lamp !== targetLamp,
       isHigherStuff: isPusher,
-      pucTierText: cand.pucTierText,
+      pucTierText: (enablePUC && cand.targetLamp === 'PERFECT ULTIMATE CHAIN') ? cand.pucTierText : undefined,
     });
   }
 
@@ -732,6 +791,7 @@ export function generateRoadmap(
   minFeasibility: number = 0,
   maxSteps: number = MAX_ROADMAP_STEPS,
   existingTop50?: Top50Slot[] | { chartID: string; vf: number }[],
+  enablePUC: boolean = targetLamp === 'PERFECT ULTIMATE CHAIN',
 ): RoadmapStepList {
   const deltaNeeded = Math.max(0, targetVF - currentVF);
 
@@ -762,6 +822,7 @@ export function generateRoadmap(
       minFeasibility,
       maxSteps,
       initialTop50,
+      enablePUC,
     );
   }
 
@@ -777,6 +838,7 @@ export function generateRoadmap(
     minFeasibility,
     maxSteps,
     initialTop50,
+    enablePUC,
   );
 
   if (firstPlan.targetReached || firstPlan.steps.length === 0) {
@@ -802,6 +864,7 @@ export function generateRoadmap(
     minFeasibility,
     maxSteps,
     initialTop50,
+    enablePUC,
   );
 }
 

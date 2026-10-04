@@ -265,7 +265,7 @@ export const FarmableTab: React.FC<FarmableTabProps> = ({ farmables, version }) 
                       S: {f.sTier.text}
                     </span>
                   )}
-                  {f.pucTier?.text && (
+                  {f.projectedLamp === 'PERFECT ULTIMATE CHAIN' && f.pucTier?.text && (
                     <span className="px-1.5 py-0.5 rounded bg-yellow-500/10 border border-yellow-500/30 text-yellow-400 font-bold" title="Official sdvx.maya2silence.com PUC Difficulty">
                       PUC: {f.pucTier.text}
                     </span>
@@ -421,7 +421,7 @@ export const FarmableTab: React.FC<FarmableTabProps> = ({ farmables, version }) 
                             <span className="text-gray-500 text-[10px]">-</span>
                           )}
 
-                          {f.pucTier?.text && (
+                          {f.projectedLamp === 'PERFECT ULTIMATE CHAIN' && f.pucTier?.text && (
                             <span className="px-1.5 py-0.5 rounded bg-yellow-500/10 border border-yellow-500/30 text-yellow-400 text-[10px] font-bold" title="Official sdvx.maya2silence.com PUC Difficulty">
                               PUC: {f.pucTier.text}
                             </span>

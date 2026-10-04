@@ -161,12 +161,17 @@ describe('PUC Tables Integration (sdvx.maya2silence.com/table)', () => {
       artist: 'Team Grimoire',
     };
 
-    const result = analyzeProfile([mockPB], [mockChart], [mockSong], { version: 'vf6' });
+    const result = analyzeProfile([mockPB], [mockChart], [mockSong], { version: 'vf6', enablePUC: true });
     const pucUpgrade = result.upscores.find((u) => u.targetLamp === 'PERFECT ULTIMATE CHAIN');
 
     expect(pucUpgrade).toBeDefined();
     expect(pucUpgrade?.targetScore).toBe(10_000_000);
     expect(pucUpgrade?.targetVF).toBe(0.415);
     expect(pucUpgrade?.pucTierText).toBe('Tier 15 (18.0)');
+
+    // In legacy mode (enablePUC: false), PUC upgrades are omitted
+    const legacyResult = analyzeProfile([mockPB], [mockChart], [mockSong], { version: 'vf6', enablePUC: false });
+    const legacyPucUpgrade = legacyResult.upscores.find((u) => u.targetLamp === 'PERFECT ULTIMATE CHAIN');
+    expect(legacyPucUpgrade).toBeUndefined();
   });
 });

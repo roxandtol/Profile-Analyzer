@@ -26,6 +26,7 @@ import {
 } from './core/types';
 import { calculateChartVF } from './core/volforce';
 import { calculateUpscoreFeasibility } from './core/upscoreFeasibility';
+import { getPucChartInfo, formatPucTierBadge } from './core/pucTable';
 import { Route, Flame, Target, ListOrdered, Share2, RefreshCw } from 'lucide-react';
 
 export const App: React.FC = () => {
@@ -51,6 +52,9 @@ export const App: React.FC = () => {
   const [customTargetVF, setCustomTargetVF] = useState<number | null>(null);
   const [roadmapStrategy, setRoadmapStrategy] = useState<RoadmapStrategy>('most-feasible');
   const [roadmapTargetLamp, setRoadmapTargetLamp] = useState<SDVXLamp>('EXCESSIVE CLEAR');
+  const [enablePUC, setEnablePUC] = useState<boolean>(() => {
+    return localStorage.getItem('sdvx_enable_puc') === 'true';
+  });
   const [stepOverrides, setStepOverrides] = useState<Record<number, Partial<RoadmapStep>>>({});
   const [dismissedChartIDs, setDismissedChartIDs] = useState<Set<string>>(new Set());
   const [activeTab, setActiveTab] = useState<'roadmap' | 'upscores' | 'farmable' | 'top50'>('roadmap');
@@ -91,8 +95,7 @@ export const App: React.FC = () => {
         pbsResp.pbs,
         pbsResp.charts,
         pbsResp.songs,
-        version,
-        versionFilter,
+        { version, versionFilter, enablePUC },
       );
 
       const target =
@@ -122,8 +125,8 @@ export const App: React.FC = () => {
   // Perform Analysis
   const analysis: AnalyzerResult | null = useMemo(() => {
     if (!profile || rawPBs.length === 0) return null;
-    return analyzeProfile(rawPBs, rawCharts, rawSongs, version, versionFilter);
-  }, [profile, rawPBs, rawCharts, rawSongs, version, versionFilter]);
+    return analyzeProfile(rawPBs, rawCharts, rawSongs, { version, versionFilter, enablePUC });
+  }, [profile, rawPBs, rawCharts, rawSongs, version, versionFilter, enablePUC]);
 
   // Merge PB and Catalog charts & songs
   const { allChartsMap, allSongsMap } = useMemo(() => {
@@ -174,11 +177,12 @@ export const App: React.FC = () => {
         targetVF,
         targetLamp: roadmapTargetLamp,
         minFeasibility: 0,
+        enablePUC,
       },
     );
 
     return res.filter((f) => !dismissedChartIDs.has(f.chart.chartID));
-  }, [analysis, allChartsMap, allSongsMap, rawPBs, version, versionFilter, targetVF, roadmapTargetLamp, dismissedChartIDs]);
+  }, [analysis, allChartsMap, allSongsMap, rawPBs, version, versionFilter, targetVF, roadmapTargetLamp, dismissedChartIDs, enablePUC]);
 
   // Filtered Upscores (without dismissed)
   const activeUpscores = useMemo(() => {
@@ -193,6 +197,15 @@ export const App: React.FC = () => {
 
   const handleTargetLampChange = (newLamp: SDVXLamp) => {
     setRoadmapTargetLamp(newLamp);
+    setStepOverrides({});
+  };
+
+  const handleTogglePUC = (enabled: boolean) => {
+    setEnablePUC(enabled);
+    localStorage.setItem('sdvx_enable_puc', String(enabled));
+    if (!enabled && roadmapTargetLamp === 'PERFECT ULTIMATE CHAIN') {
+      setRoadmapTargetLamp('EXCESSIVE CLEAR');
+    }
     setStepOverrides({});
   };
 
@@ -214,7 +227,12 @@ export const App: React.FC = () => {
 
     const currentOverride = stepOverrides[stepNumber] || {};
     const chart = currentOverride.chart || baseStep.chart;
-    const targetScore = currentOverride.targetScore ?? baseStep.targetScore;
+    const targetScore =
+      newLamp === 'PERFECT ULTIMATE CHAIN'
+        ? 10_000_000
+        : baseStep.targetLamp === 'PERFECT ULTIMATE CHAIN'
+        ? 9_900_000
+        : (currentOverride.targetScore ?? baseStep.targetScore);
     const currentScore = currentOverride.currentScore ?? baseStep.currentScore;
     const currentLamp = currentOverride.currentLamp ?? baseStep.currentLamp;
 
@@ -225,11 +243,13 @@ export const App: React.FC = () => {
     let newNetGain = 0;
     if (currentScore !== undefined && currentScore > 0) {
       const isTop50 = analysis.top50Scores.some((s) => s.chart.chartID === chart.chartID);
+      const existingVF = calculateChartVF(currentScore, currentLamp || 'CLEAR', chart.levelNum, version);
+      const directGain = Math.max(0, newTargetVF - existingVF);
       if (isTop50) {
-        const existingVF = calculateChartVF(currentScore, currentLamp || 'CLEAR', chart.levelNum, version);
-        newNetGain = Math.max(0, newTargetVF - existingVF);
+        newNetGain = directGain;
       } else {
-        newNetGain = Math.max(0, newTargetVF - analysis.top50Cutoff);
+        const displacementGain = Math.max(0, newTargetVF - analysis.top50Cutoff);
+        newNetGain = Math.min(displacementGain, directGain);
       }
     } else {
       newNetGain = Math.max(0, newTargetVF - analysis.top50Cutoff);
@@ -245,6 +265,12 @@ export const App: React.FC = () => {
       'S',
       newLamp,
     );
+
+    const isPUC = enablePUC && newLamp === 'PERFECT ULTIMATE CHAIN';
+    const songTitle =
+      baseStep.song?.title || chart.song?.title || allSongsMap.get(chart.songID || '')?.title || '';
+    const pucInfo = isPUC ? getPucChartInfo(songTitle, chart.difficulty, chart.levelNum) : null;
+    const pucTierNum = pucInfo ? parseInt(pucInfo.tierId, 10) : undefined;
 
     const lampLabel =
       newLamp === 'ULTIMATE CHAIN'
@@ -279,11 +305,14 @@ export const App: React.FC = () => {
         ...baseStep,
         ...currentOverride,
         targetLamp: newLamp,
+        targetScore,
         chartVF: newTargetVF,
         netVFGain: newNetGain,
         feasibility: newFeasibility,
         primaryFactor,
         rationale,
+        pucTier: pucTierNum !== undefined && !isNaN(pucTierNum) ? pucTierNum : undefined,
+        pucTierText: pucInfo ? formatPucTierBadge(pucInfo) : undefined,
       },
     }));
   };
@@ -302,8 +331,9 @@ export const App: React.FC = () => {
       40,
       MAX_ROADMAP_STEPS,
       analysis.top50Scores.map((s) => ({ chartID: s.chart.chartID, vf: s.vf })),
+      enablePUC,
     );
-  }, [analysis, targetVF, activeUpscores, farmables, version, roadmapStrategy, roadmapTargetLamp]);
+  }, [analysis, targetVF, activeUpscores, farmables, version, roadmapStrategy, roadmapTargetLamp, enablePUC]);
 
 
   const roadmapSteps = useMemo(() => {
@@ -473,6 +503,8 @@ export const App: React.FC = () => {
                 version={version}
                 strategy={roadmapStrategy}
                 targetLamp={roadmapTargetLamp}
+                enablePUC={enablePUC}
+                onTogglePUC={handleTogglePUC}
                 onStrategyChange={handleStrategyChange}
                 onTargetLampChange={handleTargetLampChange}
                 onChangeStepLamp={handleChangeStepLamp}
