@@ -166,21 +166,32 @@ export const RoadmapView: React.FC<RoadmapViewProps> = ({
             </span>
           </div>
           <div className="flex flex-wrap gap-2">
-            {STRATEGIES.map((s) => (
-              <button
-                key={s.id}
-                onClick={() => onStrategyChange(s.id)}
-                title={s.desc}
-                className={`px-3 py-1.5 rounded-lg text-xs font-mono font-medium transition-all flex items-center gap-1.5 ${
-                  strategy === s.id
-                    ? 'bg-sdvx-cyan text-gray-950 font-bold shadow-md shadow-sdvx-cyan/20 scale-[1.02]'
-                    : 'bg-[#141b2d] border border-[#202b40] text-gray-400 hover:text-white hover:border-gray-500'
-                }`}
-              >
-                <span>{s.icon}</span>
-                <span>{s.label}</span>
-              </button>
-            ))}
+            {STRATEGIES.map((s) => {
+              const isSelected = strategy === s.id;
+              const isEffective = (steps as any).strategyUsed === s.id && (steps as any).wasStrategyChanged;
+              return (
+                <button
+                  key={s.id}
+                  onClick={() => onStrategyChange(s.id)}
+                  title={s.desc}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-mono font-medium transition-all flex items-center gap-1.5 ${
+                    isSelected
+                      ? 'bg-sdvx-cyan text-gray-950 font-bold shadow-md shadow-sdvx-cyan/20 scale-[1.02]'
+                      : isEffective
+                      ? 'bg-sdvx-cyan/20 border border-sdvx-cyan text-sdvx-cyan font-bold ring-1 ring-sdvx-cyan/50'
+                      : 'bg-[#141b2d] border border-[#202b40] text-gray-400 hover:text-white hover:border-gray-500'
+                  }`}
+                >
+                  <span>{s.icon}</span>
+                  <span>{s.label}</span>
+                  {isEffective && (
+                    <span className="text-[9px] px-1 py-0.2 rounded bg-sdvx-cyan text-gray-950 font-black">
+                      ACTIVE
+                    </span>
+                  )}
+                </button>
+              );
+            })}
           </div>
         </div>
 
@@ -229,6 +240,18 @@ export const RoadmapView: React.FC<RoadmapViewProps> = ({
 
       {/* Progress Header Card */}
       <div className="bg-[#0f1422] border border-[#1f293d] rounded-2xl p-6 shadow-xl">
+        {(steps as any).wasStrategyChanged && (
+          <div className="mb-4 flex items-start gap-2.5 p-3 rounded-xl bg-sdvx-cyan/10 border border-sdvx-cyan/30 text-xs text-sdvx-cyan shadow-sm">
+            <Sparkles className="w-4 h-4 text-sdvx-cyan shrink-0 mt-0.5" />
+            <div>
+              <span className="font-bold text-white uppercase tracking-wider text-[11px] mr-2 px-1.5 py-0.5 rounded bg-sdvx-cyan/20 border border-sdvx-cyan/40">
+                Strategy Auto-Adjusted
+              </span>
+              <span className="text-gray-300">{(steps as any).strategyChangeReason}</span>
+            </div>
+          </div>
+        )}
+
         <div className="flex flex-wrap items-center justify-between gap-4 mb-3">
           <div>
             <div className="flex flex-wrap items-center gap-2">

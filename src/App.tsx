@@ -172,7 +172,7 @@ export const App: React.FC = () => {
         maxLevel,
         targetVF,
         targetLamp: roadmapTargetLamp,
-        minFeasibility: 40,
+        minFeasibility: 0,
       },
     );
 
@@ -299,7 +299,7 @@ export const App: React.FC = () => {
 
   const roadmapSteps = useMemo(() => {
     let runningVF = analysis ? analysis.currentProfileVF : 0;
-    return baseRoadmap.map((s) => {
+    const res = baseRoadmap.map((s) => {
       const override = stepOverrides[s.stepNumber];
       const merged: RoadmapStep = override ? ({ ...s, ...override } as RoadmapStep) : s;
       runningVF = Math.round((runningVF + merged.netVFGain) * 1000) / 1000;
@@ -308,6 +308,14 @@ export const App: React.FC = () => {
         cumulativeProfileVF: runningVF,
       };
     });
+    const list = res as any;
+    list.strategyUsed = (baseRoadmap as any).strategyUsed;
+    list.originalStrategy = (baseRoadmap as any).originalStrategy;
+    list.wasStrategyChanged = (baseRoadmap as any).wasStrategyChanged;
+    list.strategyChangeReason = (baseRoadmap as any).strategyChangeReason;
+    list.effectiveLamp = (baseRoadmap as any).effectiveLamp;
+    list.targetReached = (baseRoadmap as any).targetReached;
+    return list;
   }, [baseRoadmap, stepOverrides, analysis]);
 
   const handleDismissChart = (chartID: string) => {

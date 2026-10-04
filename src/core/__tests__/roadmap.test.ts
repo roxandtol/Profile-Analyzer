@@ -252,10 +252,10 @@ describe('Roadmap Generator Strategies & Feasibility Priority', () => {
       },
     }));
 
-    // Target requires +1.000 VF, which with +0.010 per chart would take 100 charts
+    // Target requires huge gain that cannot be reached within 50 plays even with UC
     const roadmap = generateRoadmap(
       18.000,
-      19.000,
+      25.000,
       [],
       manyFarmables,
       'vf6',
@@ -265,5 +265,79 @@ describe('Roadmap Generator Strategies & Feasibility Priority', () => {
     expect(roadmap.length).toBe(50);
     expect(roadmap.length).toBeLessThanOrEqual(50);
     expect(roadmap[49].stepNumber).toBe(50);
+  });
+
+  it('automatically changes strategy to reach desired volforce when first plan falls short', () => {
+    // 50 highly feasible charts with tiny gain (+0.002 each -> max +0.100)
+    const smallFeasibleFarmables: FarmableOpportunity[] = Array.from({ length: 50 }, (_, i) => ({
+      id: `small-${i}`,
+      chart: { chartID: `small-c-${i}`, difficulty: 'EXH', level: '17', levelNum: 17.0 },
+      song: { id: `small-s-${i}`, title: `Small Gain ${i}`, artist: `Artist` },
+      levelNum: 17.0,
+      difficulty: 'EXH',
+      individualDifference: false,
+      projectedScore: 9_900_000,
+      projectedLamp: 'EXCESSIVE CLEAR',
+      projectedVF: 0.350,
+      netVFGain: 0.002,
+      farmabilityScore: 100,
+      isPlayed: false,
+      primaryAdvantage: 'High Feasibility',
+      feasibility: {
+        expectedPlayerVF: 16.5,
+        userVF: 17.0,
+        vfFitDelta: 0.5,
+        feasibilityPercent: 90,
+        feasibilityTier: 'VERY_HIGH',
+        label: 'Very High',
+        explanation: 'Very high feasibility',
+      },
+    }));
+
+    // 10 moderate feasibility charts with large gain (+0.030 each)
+    const largeGainFarmables: FarmableOpportunity[] = Array.from({ length: 10 }, (_, i) => ({
+      id: `large-${i}`,
+      chart: { chartID: `large-c-${i}`, difficulty: 'MXM', level: '18', levelNum: 18.5 },
+      song: { id: `large-s-${i}`, title: `Large Gain ${i}`, artist: `Artist` },
+      levelNum: 18.5,
+      difficulty: 'MXM',
+      individualDifference: false,
+      projectedScore: 9_900_000,
+      projectedLamp: 'EXCESSIVE CLEAR',
+      projectedVF: 0.385,
+      netVFGain: 0.030,
+      farmabilityScore: 200,
+      isPlayed: false,
+      primaryAdvantage: 'Big Gain',
+      feasibility: {
+        expectedPlayerVF: 17.5,
+        userVF: 17.0,
+        vfFitDelta: -0.5,
+        feasibilityPercent: 60,
+        feasibilityTier: 'MODERATE',
+        label: 'Moderate',
+        explanation: 'Moderate feasibility',
+      },
+    }));
+
+    const allFarmables = [...smallFeasibleFarmables, ...largeGainFarmables];
+
+    // Current: 17.000, Target: 17.200 (+0.200 VF needed)
+    // In most-feasible, it picks 90% feasible charts (+0.002 each). 50 * 0.002 = +0.100 max! Fails to reach 17.200!
+    // But balanced/fastest can pick the +0.030 charts and reach 17.200 easily.
+    const roadmap = generateRoadmap(
+      17.000,
+      17.200,
+      [],
+      allFarmables,
+      'vf7',
+      'most-feasible',
+    );
+
+    expect(roadmap.wasStrategyChanged).toBe(true);
+    expect(roadmap.targetReached).toBe(true);
+    expect(roadmap.strategyUsed).not.toBe('most-feasible');
+    expect(roadmap[roadmap.length - 1].cumulativeProfileVF).toBeGreaterThanOrEqual(17.200);
+    expect(roadmap.length).toBeLessThanOrEqual(50);
   });
 });

@@ -230,6 +230,9 @@ async function main() {
       console.log('  Target VF is already achieved or no viable actions found.');
     } else {
       console.log(`  Steps required: ${roadmap.length}`);
+      if (roadmap.wasStrategyChanged) {
+        console.log(`  ⚡ Auto-Adjusted Strategy: ${roadmap.strategyChangeReason}`);
+      }
       if (roadmap.length >= 50 && roadmap[roadmap.length - 1].cumulativeProfileVF < targetVF) {
         console.log(`  (Note: Roadmap capped at 50 plays based on SDVX Top 50 limit. Max reachable with current pool: ${roadmap[roadmap.length - 1].cumulativeProfileVF.toFixed(3)} VF)`);
       }

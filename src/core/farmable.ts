@@ -45,9 +45,8 @@ export function parseTierEase(sTierText?: string): number {
  * Determine recommended level range based on target VF.
  */
 export function getDefaultLevelRange(targetVF: number): { minLevel: number; maxLevel: number } {
-  if (targetVF >= 20.0) return { minLevel: 18, maxLevel: 20 };
-  if (targetVF >= 19.0) return { minLevel: 18, maxLevel: 19 };
-  if (targetVF >= 18.0) return { minLevel: 17, maxLevel: 18 };
+  if (targetVF >= 19.0) return { minLevel: 18, maxLevel: 20 };
+  if (targetVF >= 18.0) return { minLevel: 17, maxLevel: 19 };
   if (targetVF >= 17.0) return { minLevel: 16, maxLevel: 18 };
   if (targetVF >= 16.0) return { minLevel: 15, maxLevel: 17 };
   return { minLevel: 14, maxLevel: 16 };

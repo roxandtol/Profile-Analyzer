@@ -266,7 +266,19 @@ export interface RoadmapStep {
   primaryFactor: string;
   feasibility?: UpscoreFeasibility;
   alternatives?: RoadmapStepAlternative[];
+  strategyUsed?: RoadmapStrategy;
+  strategyAdjusted?: boolean;
+  strategyAdjustmentReason?: string;
 }
+
+export type RoadmapStepList = RoadmapStep[] & {
+  strategyUsed?: RoadmapStrategy;
+  originalStrategy?: RoadmapStrategy;
+  wasStrategyChanged?: boolean;
+  strategyChangeReason?: string;
+  effectiveLamp?: SDVXLamp;
+  targetReached?: boolean;
+};
 
 export interface ProfilePlan {
   username: string;
