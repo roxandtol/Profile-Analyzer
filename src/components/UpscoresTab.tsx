@@ -374,7 +374,8 @@ export const UpscoresTab: React.FC<UpscoresTabProps> = ({ upscores, version, ser
                   </td>
                 </tr>
               ) : (
-                sorted.map((u) => {
+                sorted.map((u, idx) => {
+                  const isNearBottom = idx >= Math.max(1, sorted.length - 3);
                   const diffBadge = getDifficultyBadgeColor(u.chart.difficulty);
                   const lampBadge = getLampBadgeColor(u.currentLamp);
                   const feasBadge = u.feasibility
@@ -458,7 +459,6 @@ export const UpscoresTab: React.FC<UpscoresTabProps> = ({ upscores, version, ser
                       <td className="py-3 px-4">
                         <div className="relative group inline-block">
                           <span
-                            title={u.description}
                             className={`inline-block px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider cursor-help border transition-colors whitespace-nowrap ${
                               u.category === 'near-s'
                                 ? 'bg-pink-500/10 text-pink-400 border-pink-500/30 group-hover:bg-pink-500/20 group-hover:border-pink-500/50'
@@ -473,7 +473,11 @@ export const UpscoresTab: React.FC<UpscoresTabProps> = ({ upscores, version, ser
                           </span>
 
                           {/* Hover Tooltip Description */}
-                          <div className="absolute right-0 top-full mt-1.5 hidden group-hover:block z-50 w-72 p-2.5 bg-[#141b2d] border border-[#2b3a58] rounded-xl shadow-2xl text-[11px] text-gray-200 pointer-events-none">
+                          <div
+                            className={`absolute right-0 ${
+                              isNearBottom ? 'bottom-full mb-2' : 'top-full mt-2'
+                            } hidden group-hover:block z-50 w-72 p-2.5 bg-[#121826] border border-[#2b3a58] rounded-xl shadow-2xl text-[11px] text-gray-200 pointer-events-none`}
+                          >
                             <p className="leading-snug text-gray-300">
                               {u.description}
                             </p>
