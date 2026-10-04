@@ -196,11 +196,16 @@ export const App: React.FC = () => {
   };
 
   const handleSwapStep = (stepNumber: number, alternative: RoadmapStepAlternative) => {
+    const baseStep = baseRoadmap.find((s) => s.stepNumber === stepNumber);
     setStepOverrides((prev) => ({
       ...prev,
-      [stepNumber]: alternative,
+      [stepNumber]: {
+        ...alternative,
+        isHigherStuff: baseStep?.isHigherStuff,
+      },
     }));
   };
+
 
   const handleChangeStepLamp = (stepNumber: number, newLamp: SDVXLamp) => {
     const baseStep = baseRoadmap.find((s) => s.stepNumber === stepNumber);

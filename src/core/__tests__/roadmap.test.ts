@@ -345,5 +345,145 @@ describe('Roadmap Generator Strategies & Feasibility Priority', () => {
     expect(pusherSteps.length).toBeGreaterThan(0);
     expect(pusherSteps[0].primaryFactor).toContain('Target Pusher');
   });
+
+  it('selects pushers that are only slightly less feasible (e.g. 90 -> 80) rather than extreme low feasibility reach charts', () => {
+    // 48 feasible upscores at 90% feasibility (+0.001 VF each = +0.048 VF total)
+    const feasibleUpscores: UpscoreOpportunity[] = Array.from({ length: 48 }, (_, i) => ({
+      id: `u-${i}`,
+      chart: { chartID: `c-${i}`, difficulty: 'MXM', level: '18', levelNum: 18.0 },
+      song: { id: `s-${i}`, title: `Feasible Song ${i}`, artist: `Artist` },
+      currentScore: 9_850_000,
+      currentLamp: 'CLEAR',
+      currentGrade: 'AAA+',
+      currentVF: 0.360,
+      targetScore: 9_900_000,
+      targetLamp: 'EXCESSIVE CLEAR',
+      targetGrade: 'S',
+      targetVF: 0.361,
+      netVFGain: 0.001,
+      category: 'near-s',
+      description: 'Quick win near S',
+      effortRating: 1,
+      levelNum: 18.0,
+      feasibility: {
+        expectedPlayerVF: 18.0,
+        userVF: 19.5,
+        vfFitDelta: 1.5,
+        feasibilityPercent: 90,
+        feasibilityTier: 'VERY_HIGH',
+        label: 'Very High',
+        explanation: 'Very high',
+      },
+    }));
+
+
+    // Pusher candidates:
+    // P1: 78% feas, +0.030 VF (slightly less feasible, e.g. 90 -> 78)
+    // P2: 76% feas, +0.030 VF (slightly less feasible, e.g. 90 -> 76)
+    // P_Extreme: 20% feas, +0.065 VF (a lot less feasible!)
+    const farmables: FarmableOpportunity[] = [
+      {
+        id: 'p-extreme',
+        chart: { chartID: 'c-extreme', difficulty: 'MXM', level: '20', levelNum: 20.0 },
+        song: { id: 's-extreme', title: 'Extreme Reach 20', artist: 'Artist' },
+        levelNum: 20.0,
+        difficulty: 'MXM',
+        individualDifference: true,
+        projectedScore: 9_900_000,
+        projectedLamp: 'EXCESSIVE CLEAR',
+        projectedVF: 0.440,
+        netVFGain: 0.065,
+        farmabilityScore: 300,
+        isPlayed: false,
+        primaryAdvantage: 'Extreme Gain',
+        feasibility: {
+          expectedPlayerVF: 20.8,
+          userVF: 19.5,
+          vfFitDelta: -1.3,
+          feasibilityPercent: 20,
+          feasibilityTier: 'HARD',
+          label: 'Hard',
+          explanation: 'Extreme jump',
+        },
+      },
+      {
+        id: 'p-1',
+        chart: { chartID: 'c-p1', difficulty: 'MXM', level: '19', levelNum: 19.0 },
+        song: { id: 's-p1', title: 'Solid Pusher 1', artist: 'Artist' },
+        levelNum: 19.0,
+        difficulty: 'MXM',
+        individualDifference: false,
+        projectedScore: 9_900_000,
+        projectedLamp: 'EXCESSIVE CLEAR',
+        projectedVF: 0.400,
+        netVFGain: 0.030,
+        farmabilityScore: 220,
+        isPlayed: false,
+        primaryAdvantage: 'High Gain',
+        feasibility: {
+          expectedPlayerVF: 19.5,
+          userVF: 19.5,
+          vfFitDelta: 0.0,
+          feasibilityPercent: 78,
+          feasibilityTier: 'VERY_HIGH',
+          label: 'Very High',
+          explanation: 'Close match',
+        },
+      },
+      {
+        id: 'p-2',
+        chart: { chartID: 'c-p2', difficulty: 'MXM', level: '19', levelNum: 19.0 },
+        song: { id: 's-p2', title: 'Solid Pusher 2', artist: 'Artist' },
+        levelNum: 19.0,
+        difficulty: 'MXM',
+        individualDifference: false,
+        projectedScore: 9_900_000,
+        projectedLamp: 'EXCESSIVE CLEAR',
+        projectedVF: 0.400,
+        netVFGain: 0.030,
+        farmabilityScore: 215,
+        isPlayed: false,
+        primaryAdvantage: 'High Gain',
+        feasibility: {
+          expectedPlayerVF: 19.6,
+          userVF: 19.5,
+          vfFitDelta: -0.1,
+          feasibilityPercent: 76,
+          feasibilityTier: 'VERY_HIGH',
+          label: 'Very High',
+          explanation: 'Close match',
+        },
+      },
+    ];
+
+    // Current: 19.500, Target: 19.608 (+0.108 VF needed).
+    // 48 feasible (>=80%) give 48 * 0.001 = 0.048 VF -> shortfall is +0.060 VF.
+    // 2 pushers at +0.030 VF each (78% and 76% feas) cleanly bridge +0.060 VF!
+    const roadmap = generateRoadmap(
+      19.500,
+      19.608,
+      feasibleUpscores,
+      farmables,
+      'vf7',
+      'most-feasible',
+      'EXCESSIVE CLEAR',
+      80,
+    );
+
+    expect(roadmap.targetReached).toBe(true);
+    expect(roadmap.feasibleCount).toBe(48);
+    expect(roadmap.higherStuffCount).toBe(2);
+
+
+    const pushers = roadmap.filter((s) => s.isHigherStuff);
+    expect(pushers.length).toBe(2);
+
+    // Both pushers must be around 80% feasibility (82% and 80%), NEVER the 20% extreme chart!
+    for (const p of pushers) {
+      expect(p.feasibility?.feasibilityPercent).toBeGreaterThanOrEqual(75);
+      expect(p.chart.chartID).not.toBe('c-extreme');
+    }
+  });
 });
+
 

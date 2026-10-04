@@ -38,27 +38,36 @@ export const MAX_ROADMAP_STEPS = 50;
  */
 export function isPusherChart(
   cand: {
-    levelNum: number;
-    netVFGain: number;
+    levelNum?: number;
+    netVFGain?: number;
     chartVF?: number;
     isHigherStuff?: boolean;
     targetLamp?: string;
     type?: string;
+    feasibilityPercent?: number;
   },
-  targetVF: number,
+  _targetVF?: number,
 ): boolean {
-  if (cand.isHigherStuff) return true;
-  if (cand.targetLamp === 'ULTIMATE CHAIN' || cand.targetLamp === 'MAXXIVE CLEAR') {
-    if (cand.netVFGain >= 0.015) return true;
-  }
-  // High difficulty tier: Level 19 or 20 in SDVX is always a pusher milestone
-  if (cand.levelNum >= 19.0) return true;
-  // High single-chart VF meeting or exceeding targetCutoff with meaningful gain
-  const targetCutoff = targetVF / 50;
-  if (cand.chartVF && cand.chartVF >= targetCutoff && cand.netVFGain >= 0.015) return true;
-  if (cand.netVFGain >= 0.025) return true;
-  return false;
+  return !!cand.isHigherStuff;
 }
+
+/**
+ * Sorts pusher candidates prioritizing high feasibility so pushers are only
+ * slightly less feasible than comfortable plays (e.g. 90 -> 80), not a lot less.
+ */
+function sortPusherCandidates(candidates: CandidateItem[]): CandidateItem[] {
+  return candidates.sort((a, b) => {
+    // Score heavily weights feasibility so high feasibility pushers (~80%)
+    // are chosen over low-feasibility reaches (e.g. 20-40%).
+    const scoreA = a.feasibilityPercent * 4 + a.netVFGain * 1000;
+    const scoreB = b.feasibilityPercent * 4 + b.netVFGain * 1000;
+    if (Math.abs(scoreB - scoreA) > 0.001) {
+      return scoreB - scoreA;
+    }
+    return b.feasibilityPercent - a.feasibilityPercent || b.netVFGain - a.netVFGain;
+  });
+}
+
 
 function buildCandidates(
   upscores: UpscoreOpportunity[],
@@ -350,9 +359,15 @@ function maximizeFeasibleWithHigherStuff(
       'most-feasible',
     );
 
-    // 2. Higher Pool: maximized for net VF gain to bridge any remaining gap (pusher charts)
+    // Baseline feasibility of the top feasible plays (e.g. ~90%)
+    const sampleCount = Math.min(stepLimit, feasiblePool.length);
+    const topFeasible = feasiblePool.slice(0, sampleCount);
+    const baselineFeas = topFeasible.length > 0
+      ? Math.round(topFeasible.reduce((acc, c) => acc + c.feasibilityPercent, 0) / topFeasible.length)
+      : 85;
+
+    // 2. Higher Pool: candidates with meaningful net gain (>= 0.008 VF)
     const allHigher = buildCandidates(upscores, farmables, version, strategy, lamp, 0);
-    const higherPool = sortCandidates(allHigher, 'fastest');
 
     let bestBlend: {
       steps: CandidateItem[];
@@ -361,20 +376,68 @@ function maximizeFeasibleWithHigherStuff(
 
     // Search m from max possible down to 0 to find the MAXIMUM feasible count
     const startM = Math.min(stepLimit, feasiblePool.length);
-    for (let m = startM; m >= 0; m--) {
-      const selected: CandidateItem[] = [];
-      const usedChartIDs = new Set<string>();
-      let runningVF = currentVF;
 
-      // Add up to m feasible candidates
-      for (let i = 0; i < m && i < feasiblePool.length; i++) {
-        const cand = feasiblePool[i];
-        if (usedChartIDs.has(cand.id)) continue;
-        usedChartIDs.add(cand.id);
-        runningVF = Math.round((runningVF + cand.netVFGain) * 1000) / 1000;
-        selected.push({ ...cand, isHigherStuff: false });
+    // Target pushers should only be slightly less feasible, not a lot less (for example, 90 -> 80).
+    // Test progressively:
+    // Tier 1: slightly less feasible (within ~15% of baseline, e.g. 90 -> 75, capturing 80%+)
+    // Tier 2: moderately less feasible (within ~25% of baseline, e.g. 90 -> 65)
+    // Tier 3: stretch tier (within ~35% of baseline, e.g. 90 -> 55)
+    // Tier 4: full fallback to 0 (so the roadmap ALWAYS finds a way to reach target VF)
+    const pusherCutoffs = [
+      Math.max(45, baselineFeas - 15),
+      Math.max(35, baselineFeas - 25),
+      Math.max(25, baselineFeas - 35),
+      0,
+    ];
+
+    for (const pusherMinFeas of pusherCutoffs) {
+      const eligibleHigher = allHigher.filter(
+        (c) => c.feasibilityPercent >= pusherMinFeas && c.netVFGain >= 0.008,
+      );
+      const higherPool = sortPusherCandidates(eligibleHigher);
+
+      for (let m = startM; m >= 0; m--) {
+        const selected: CandidateItem[] = [];
+        const usedChartIDs = new Set<string>();
+        let runningVF = currentVF;
+
+        // Add up to m feasible candidates
+        for (let i = 0; i < m && i < feasiblePool.length; i++) {
+          const cand = feasiblePool[i];
+          if (usedChartIDs.has(cand.id)) continue;
+          usedChartIDs.add(cand.id);
+          runningVF = Math.round((runningVF + cand.netVFGain) * 1000) / 1000;
+          selected.push({ ...cand, isHigherStuff: false });
+          if (runningVF >= targetVF) {
+            // Reached target entirely with feasible plays!
+            return {
+              selected,
+              finalVF: runningVF,
+              targetReached: true,
+              lamp,
+            };
+          }
+        }
+
+        // Fill remaining slots with the best pusher charts from higherPool
+        for (const cand of higherPool) {
+          if (selected.length >= stepLimit) break;
+          if (usedChartIDs.has(cand.id)) continue;
+          usedChartIDs.add(cand.id);
+          runningVF = Math.round((runningVF + cand.netVFGain) * 1000) / 1000;
+          selected.push({ ...cand, isHigherStuff: true });
+          if (runningVF >= targetVF) break;
+        }
+
+        if (!bestBlend || runningVF > bestBlend.finalVF) {
+          bestBlend = {
+            steps: selected,
+            finalVF: runningVF,
+          };
+        }
+
         if (runningVF >= targetVF) {
-          // Reached target entirely with feasible plays!
+          // Found the plan with maximum feasible charts that reaches targetVF
           return {
             selected,
             finalVF: runningVF,
@@ -384,31 +447,9 @@ function maximizeFeasibleWithHigherStuff(
         }
       }
 
-      // Fill remaining slots with the highest-gain charts from higherPool
-      for (const cand of higherPool) {
-        if (selected.length >= stepLimit) break;
-        if (usedChartIDs.has(cand.id)) continue;
-        usedChartIDs.add(cand.id);
-        runningVF = Math.round((runningVF + cand.netVFGain) * 1000) / 1000;
-        selected.push({ ...cand, isHigherStuff: true });
-        if (runningVF >= targetVF) break;
-      }
-
-      if (!bestBlend || runningVF > bestBlend.finalVF) {
-        bestBlend = {
-          steps: selected,
-          finalVF: runningVF,
-        };
-      }
-
-      if (runningVF >= targetVF) {
-        // Found the plan with maximum feasible charts that reaches targetVF
-        return {
-          selected,
-          finalVF: runningVF,
-          targetReached: true,
-          lamp,
-        };
+      // If this tier reached targetVF, do NOT fall through to lower feasibility tiers!
+      if (bestBlend && bestBlend.finalVF >= targetVF) {
+        break;
       }
     }
 
@@ -459,18 +500,28 @@ function maximizeFeasibleWithHigherStuff(
   for (let i = 0; i < rawCandidates.length; i++) {
     const cand = rawCandidates[i];
     currentCumulative = Math.round((currentCumulative + cand.netVFGain) * 1000) / 1000;
-    const isPusher = isPusherChart(cand, targetVF);
+    const isPusher = cand.isHigherStuff ?? false;
 
     const alternatives: RoadmapStepAlternative[] = unusedCandidates
       .filter((alt) => {
         const levelDelta = Math.abs(Math.floor(alt.levelNum) - Math.floor(cand.levelNum));
-        return (
-          levelDelta <= 1 &&
-          alt.netVFGain >= 0.005 &&
-          (isPusher || alt.feasibilityPercent >= 40)
-        );
+        if (levelDelta > 1 || alt.netVFGain < 0.005) return false;
+        if (isPusher) {
+          return (
+            alt.netVFGain >= 0.010 &&
+            alt.feasibilityPercent >= Math.max(35, (cand.feasibilityPercent || 70) - 15)
+          );
+        }
+        return alt.feasibilityPercent >= 40;
       })
-      .sort((a, b) => b.feasibilityPercent - a.feasibilityPercent || b.netVFGain - a.netVFGain)
+      .sort((a, b) => {
+        if (isPusher) {
+          const scoreA = a.feasibilityPercent * 4 + a.netVFGain * 1000;
+          const scoreB = b.feasibilityPercent * 4 + b.netVFGain * 1000;
+          return scoreB - scoreA;
+        }
+        return b.feasibilityPercent - a.feasibilityPercent || b.netVFGain - a.netVFGain;
+      })
       .slice(0, 3)
       .map((alt) => ({
         chart: alt.chart,
@@ -503,7 +554,7 @@ function maximizeFeasibleWithHigherStuff(
       cumulativeProfileVF: currentCumulative,
       completed: false,
       rationale: isPusher
-        ? `Strategic high-yield target pusher (+${cand.netVFGain.toFixed(3)} VF) to bridge your profile to ${targetVF.toFixed(3)} VF.`
+        ? `Strategic high-yield target pusher (+${cand.netVFGain.toFixed(3)} VF, ${cand.feasibilityPercent}% feas) to bridge your profile to ${targetVF.toFixed(3)} VF.`
         : cand.rationale,
       primaryFactor: isPusher
         ? `Target Pusher (+${cand.netVFGain.toFixed(3)} VF)`
