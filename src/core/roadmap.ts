@@ -9,6 +9,7 @@ import {
   VolforceVersion,
 } from './types';
 import { calculateChartVF } from './volforce';
+import { getPucChartInfo, formatPucTierBadge } from './pucTable';
 
 interface CandidateItem {
   id: string;
@@ -29,6 +30,7 @@ interface CandidateItem {
   feasibilityPercent: number;
   isQuickWin?: boolean;
   isHigherStuff?: boolean;
+  pucTierText?: string;
 }
 
 export const MAX_ROADMAP_STEPS = 50;
@@ -174,20 +176,27 @@ function buildCandidates(
       if (u.currentLamp === 'EXCESSIVE CLEAR' && candTargetLamp === 'EXCESSIVE CLEAR') {
         candTargetLamp = 'MAXXIVE CLEAR';
       }
-      if (effectiveLamp === 'ULTIMATE CHAIN') {
+      if (effectiveLamp === 'PERFECT ULTIMATE CHAIN') {
+        candTargetLamp = 'PERFECT ULTIMATE CHAIN';
+      } else if (effectiveLamp === 'ULTIMATE CHAIN') {
         candTargetLamp = 'ULTIMATE CHAIN';
       } else if (effectiveLamp === 'MAXXIVE CLEAR' && candTargetLamp === 'EXCESSIVE CLEAR') {
         candTargetLamp = 'MAXXIVE CLEAR';
       }
 
+      const candTargetScore = candTargetLamp === 'PERFECT ULTIMATE CHAIN' ? 10_000_000 : u.targetScore;
+
       let extraGain = 0;
-      if (candTargetLamp !== (u.targetLamp || effectiveLamp)) {
+      if (candTargetLamp !== (u.targetLamp || effectiveLamp) || candTargetScore !== u.targetScore) {
         const baseVF = calculateChartVF(u.targetScore, u.targetLamp || effectiveLamp, u.levelNum, version);
-        const newVF = calculateChartVF(u.targetScore, candTargetLamp, u.levelNum, version);
+        const newVF = calculateChartVF(candTargetScore, candTargetLamp, u.levelNum, version);
         extraGain = Math.max(0, newVF - baseVF);
       }
       const upgradedVF = u.targetVF + extraGain;
       const netGain = Math.round((u.netVFGain + extraGain) * 1000) / 1000;
+
+      const pucInfo = getPucChartInfo(u.chart.data?.inGameID, u.chart.difficulty, u.song?.title);
+      const pucTierText = u.pucTierText || (pucInfo ? formatPucTierBadge(pucInfo) : undefined);
 
       candidates.push({
         id: u.chart.chartID,
@@ -196,7 +205,7 @@ function buildCandidates(
         song: u.song,
         currentScore: u.currentScore,
         currentLamp: u.currentLamp,
-        targetScore: u.targetScore,
+        targetScore: candTargetScore,
         targetLamp: candTargetLamp,
         targetGrade: u.targetGrade,
         chartVF: upgradedVF,
@@ -212,6 +221,7 @@ function buildCandidates(
         isQuickWin:
           u.category === 'lamp-upgrade' ||
           (u.category === 'near-s' && feasPercent >= 65),
+        pucTierText,
       });
     }
   }
@@ -224,20 +234,27 @@ function buildCandidates(
     if (f.existingLamp === 'EXCESSIVE CLEAR' && farmTargetLamp === 'EXCESSIVE CLEAR') {
       farmTargetLamp = 'MAXXIVE CLEAR';
     }
-    if (effectiveLamp === 'ULTIMATE CHAIN') {
+    if (effectiveLamp === 'PERFECT ULTIMATE CHAIN') {
+      farmTargetLamp = 'PERFECT ULTIMATE CHAIN';
+    } else if (effectiveLamp === 'ULTIMATE CHAIN') {
       farmTargetLamp = 'ULTIMATE CHAIN';
     } else if (effectiveLamp === 'MAXXIVE CLEAR' && farmTargetLamp === 'EXCESSIVE CLEAR') {
       farmTargetLamp = 'MAXXIVE CLEAR';
     }
 
+    const farmTargetScore = farmTargetLamp === 'PERFECT ULTIMATE CHAIN' ? 10_000_000 : f.projectedScore;
+
     let extraGain = 0;
-    if (farmTargetLamp !== (f.projectedLamp || effectiveLamp)) {
+    if (farmTargetLamp !== (f.projectedLamp || effectiveLamp) || farmTargetScore !== f.projectedScore) {
       const baseVF = calculateChartVF(f.projectedScore, f.projectedLamp || effectiveLamp, f.levelNum, version);
-      const newVF = calculateChartVF(f.projectedScore, farmTargetLamp, f.levelNum, version);
+      const newVF = calculateChartVF(farmTargetScore, farmTargetLamp, f.levelNum, version);
       extraGain = Math.max(0, newVF - baseVF);
     }
     const upgradedVF = f.projectedVF + extraGain;
     const netGain = Math.round((f.netVFGain + extraGain) * 1000) / 1000;
+
+    const pucInfo = getPucChartInfo(f.chart.data?.inGameID, f.difficulty, f.song?.title);
+    const pucTierText = f.pucTier?.text || (pucInfo ? formatPucTierBadge(pucInfo) : undefined);
 
     candidates.push({
       id: f.chart.chartID,
@@ -246,7 +263,7 @@ function buildCandidates(
       song: f.song,
       currentScore: f.existingScore,
       currentLamp: f.existingLamp,
-      targetScore: f.projectedScore,
+      targetScore: farmTargetScore,
       targetLamp: farmTargetLamp,
       targetGrade: 'S',
       chartVF: upgradedVF,
@@ -259,6 +276,7 @@ function buildCandidates(
       feasibility: f.feasibility,
       feasibilityPercent: feasPercent,
       isQuickWin: false,
+      pucTierText,
     });
   }
 
@@ -375,6 +393,7 @@ function assembleSteps(
         rationale: alt.rationale,
         primaryFactor: alt.primaryFactor,
         feasibility: alt.feasibility,
+        pucTierText: alt.pucTierText,
       }));
 
     steps.push({
@@ -395,6 +414,7 @@ function assembleSteps(
       primaryFactor: cand.primaryFactor,
       feasibility: cand.feasibility,
       alternatives,
+      pucTierText: cand.pucTierText,
     });
   }
 
@@ -573,7 +593,7 @@ function maximizeFeasibleWithHigherStuff(
   }
 
   // Phase 3: If target still not reached, escalate higher stuff lamp to MAXXIVE CLEAR
-  if (!outcome.targetReached && targetLamp !== 'MAXXIVE CLEAR' && targetLamp !== 'ULTIMATE CHAIN') {
+  if (!outcome.targetReached && targetLamp !== 'MAXXIVE CLEAR' && targetLamp !== 'ULTIMATE CHAIN' && targetLamp !== 'PERFECT ULTIMATE CHAIN') {
     const outcomeMaxxive = tryBlend('MAXXIVE CLEAR', 0);
     if (outcomeMaxxive.targetReached || outcomeMaxxive.finalVF > outcome.finalVF) {
       outcome = outcomeMaxxive;
@@ -581,10 +601,18 @@ function maximizeFeasibleWithHigherStuff(
   }
 
   // Phase 4: If target still not reached, escalate higher stuff lamp to ULTIMATE CHAIN
-  if (!outcome.targetReached && targetLamp !== 'ULTIMATE CHAIN') {
+  if (!outcome.targetReached && targetLamp !== 'ULTIMATE CHAIN' && targetLamp !== 'PERFECT ULTIMATE CHAIN') {
     const outcomeUC = tryBlend('ULTIMATE CHAIN', 0);
     if (outcomeUC.targetReached || outcomeUC.finalVF > outcome.finalVF) {
       outcome = outcomeUC;
+    }
+  }
+
+  // Phase 5: If target still not reached, escalate higher stuff lamp to PERFECT ULTIMATE CHAIN (110%)
+  if (!outcome.targetReached && targetLamp !== 'PERFECT ULTIMATE CHAIN') {
+    const outcomePUC = tryBlend('PERFECT ULTIMATE CHAIN', 0);
+    if (outcomePUC.targetReached || outcomePUC.finalVF > outcome.finalVF) {
+      outcome = outcomePUC;
     }
   }
 
@@ -639,6 +667,7 @@ function maximizeFeasibleWithHigherStuff(
         rationale: alt.rationale,
         primaryFactor: alt.primaryFactor,
         feasibility: alt.feasibility,
+        pucTierText: alt.pucTierText,
       }));
 
     steps.push({
@@ -666,6 +695,7 @@ function maximizeFeasibleWithHigherStuff(
       strategyUsed: strategy,
       strategyAdjusted: isPusher || outcome.lamp !== targetLamp,
       isHigherStuff: isPusher,
+      pucTierText: cand.pucTierText,
     });
   }
 

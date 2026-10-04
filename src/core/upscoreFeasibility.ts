@@ -1,5 +1,6 @@
 import { KamaiChart, SDVXLamp, UpscoreFeasibility } from './types';
 import { parseTierEase } from './farmable';
+import { getPucChartInfo } from './pucTable';
 
 /**
  * Calculates the expected profile Volforce threshold where a typical player
@@ -11,6 +12,7 @@ export function calculateExpectedVolforce(
   targetGrade: string = 'S',
   individualDifference: boolean = false,
   targetLamp: SDVXLamp = 'EXCESSIVE CLEAR',
+  chart?: KamaiChart,
 ): number {
   // Base requirement: an average player with profile VF = levelNum + 0.5 can S-rank charts of this level.
   // E.g. Level 17.0 -> 17.5 VF, Level 18.0 -> 18.5 VF, Level 18.4 -> 18.9 VF, Level 19.0 -> 19.5 VF
@@ -41,7 +43,17 @@ export function calculateExpectedVolforce(
     // when their profile Volforce is approximately levelNum + 0.9 (adjusted for tier & gimmicks).
     expectedVF = levelNum + 0.9 - (tierEase - 5.5) * 0.08 + (individualDifference ? 0.25 : 0);
   } else if (targetLamp === 'PERFECT ULTIMATE CHAIN') {
-    expectedVF += 1.20;
+    const pucInfo = chart
+      ? getPucChartInfo(chart.data?.inGameID, chart.difficulty, chart.song?.title)
+      : null;
+
+    if (pucInfo) {
+      // Uses exact PUC internal constant and community tier ease from maya2silence
+      const pucAdjustment = (pucInfo.easeScore - 5.5) * 0.08;
+      expectedVF = pucInfo.constant + 1.20 - pucAdjustment + (individualDifference ? 0.20 : 0);
+    } else {
+      expectedVF = levelNum + 1.20 - (tierEase - 5.5) * 0.08 + (individualDifference ? 0.20 : 0);
+    }
   } else if (targetLamp === 'MAXXIVE CLEAR') {
     // Maxxive Rate requires stricter gauge retention than Excessive Clear
     expectedVF += 0.15;
@@ -51,6 +63,27 @@ export function calculateExpectedVolforce(
   }
 
   return Math.round(expectedVF * 1000) / 1000;
+}
+
+/**
+ * Determines whether there is sufficient player density in the user's Volforce range
+ * who have achieved a Perfect Ultimate Chain (PUC) on this chart using sdvx.maya2silence.com/table data.
+ */
+export function hasSufficientPUCDensity(
+  userVF: number,
+  chart: KamaiChart,
+): boolean {
+  const levelNum = chart.levelNum || parseFloat(chart.level) || 0;
+  const pucInfo = getPucChartInfo(chart.data?.inGameID, chart.difficulty, chart.song?.title);
+  const pucBase = pucInfo ? pucInfo.constant : levelNum;
+  const pucEase = pucInfo ? pucInfo.easeScore : 5;
+  const individualDifference = !!(
+    chart.data?.sTier?.individualDifference ||
+    chart.data?.clearTier?.individualDifference
+  );
+
+  const expectedPUCVF = pucBase + 1.20 - (pucEase - 5.5) * 0.08 + (individualDifference ? 0.20 : 0);
+  return userVF >= expectedPUCVF - 0.25;
 }
 
 /**
@@ -102,6 +135,7 @@ export function calculateUpscoreFeasibility(
     targetGrade,
     individualDifference,
     targetLamp,
+    chart,
   );
 
   const vfFitDelta = Math.round((userVF - expectedPlayerVF) * 1000) / 1000;
@@ -110,18 +144,18 @@ export function calculateUpscoreFeasibility(
   // Point proximity score (0.0 to 1.0)
   let pointFactor = 0.4;
   if (currentScore === 0) {
-    pointFactor = targetLamp === 'ULTIMATE CHAIN' ? 0.30 : 0.35; // unplayed
+    pointFactor = targetLamp === 'PERFECT ULTIMATE CHAIN' ? 0.25 : targetLamp === 'ULTIMATE CHAIN' ? 0.30 : 0.35; // unplayed
   } else if (pointsNeeded === 0) {
     // Pure lamp upgrade on already achieved score
-    pointFactor = targetLamp === 'ULTIMATE CHAIN' ? 0.85 : 0.95;
+    pointFactor = targetLamp === 'PERFECT ULTIMATE CHAIN' ? 0.80 : targetLamp === 'ULTIMATE CHAIN' ? 0.85 : 0.95;
   } else if (pointsNeeded <= 15_000) {
-    pointFactor = targetLamp === 'ULTIMATE CHAIN' ? 0.90 : 1.0;
+    pointFactor = targetLamp === 'PERFECT ULTIMATE CHAIN' ? 0.85 : targetLamp === 'ULTIMATE CHAIN' ? 0.90 : 1.0;
   } else if (pointsNeeded <= 35_000) {
-    pointFactor = targetLamp === 'ULTIMATE CHAIN' ? 0.75 : 0.85;
+    pointFactor = targetLamp === 'PERFECT ULTIMATE CHAIN' ? 0.70 : targetLamp === 'ULTIMATE CHAIN' ? 0.75 : 0.85;
   } else if (pointsNeeded <= 60_000) {
-    pointFactor = 0.70;
+    pointFactor = targetLamp === 'PERFECT ULTIMATE CHAIN' ? 0.55 : 0.70;
   } else if (pointsNeeded <= 100_000) {
-    pointFactor = 0.50;
+    pointFactor = targetLamp === 'PERFECT ULTIMATE CHAIN' ? 0.40 : 0.50;
   }
 
   // VF Fit score (0 to 100)
@@ -138,7 +172,9 @@ export function calculateUpscoreFeasibility(
   let explanation: string;
 
   const lampSuffix =
-    targetLamp === 'ULTIMATE CHAIN'
+    targetLamp === 'PERFECT ULTIMATE CHAIN'
+      ? ' (PUC goal: 10,000,000 pts / 110% lamp)'
+      : targetLamp === 'ULTIMATE CHAIN'
       ? ' (UC / Full Combo goal: 0 misses)'
       : targetLamp === 'MAXXIVE CLEAR'
       ? ' (Maxxive Clear goal: 104% coefficient)'

@@ -274,7 +274,9 @@ export const UpscoresTab: React.FC<UpscoresTabProps> = ({ upscores, version }) =
                     <span
                       title={u.description}
                       className={`inline-block px-1.5 py-0.2 rounded text-[10px] font-black uppercase tracking-wider cursor-help ${
-                        u.category === 'near-s'
+                        u.targetLamp === 'PERFECT ULTIMATE CHAIN'
+                          ? 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/40'
+                          : u.category === 'near-s'
                           ? 'bg-pink-500/10 text-pink-400 border border-pink-500/30'
                           : u.category === 'near-aaa-plus'
                           ? 'bg-rose-500/10 text-rose-400 border border-rose-500/30'
@@ -283,11 +285,22 @@ export const UpscoresTab: React.FC<UpscoresTabProps> = ({ upscores, version }) =
                           : 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/30'
                       }`}
                     >
-                      {u.category}
+                      {u.targetLamp === 'PERFECT ULTIMATE CHAIN' ? 'PUC Upgrade' : u.category}
                     </span>
                     <span className="text-[10px] text-gray-500 font-mono whitespace-nowrap">
                       Goal Lamp: {u.targetLamp}
                     </span>
+                    {u.pucTierText && (
+                      <a
+                        href="https://sdvx.maya2silence.com/table"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-yellow-500/20 text-yellow-300 border border-yellow-500/40 hover:bg-yellow-500/30 transition-colors"
+                        title="Official PUC Difficulty Table from sdvx.maya2silence.com/table"
+                      >
+                        👑 {u.pucTierText}
+                      </a>
+                    )}
                   </div>
                   <p className="text-[11px] text-gray-400">
                     {u.description}
@@ -424,9 +437,22 @@ export const UpscoresTab: React.FC<UpscoresTabProps> = ({ upscores, version }) =
                             {u.targetScore.toLocaleString()} ({u.targetGrade})
                           </span>
                         </div>
-                        <span className="text-[10px] text-gray-400 mt-0.5 block whitespace-nowrap">
-                          Goal Lamp: {u.targetLamp}
-                        </span>
+                        <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
+                          <span className={`text-[10px] block whitespace-nowrap ${u.targetLamp === 'PERFECT ULTIMATE CHAIN' ? 'text-yellow-400 font-bold' : 'text-gray-400'}`}>
+                            Goal Lamp: {u.targetLamp}
+                          </span>
+                          {u.pucTierText && (
+                            <a
+                              href="https://sdvx.maya2silence.com/table"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="px-1.5 py-0.2 rounded text-[9px] font-mono font-bold bg-yellow-500/20 text-yellow-300 border border-yellow-500/40 hover:bg-yellow-500/30 transition-colors"
+                              title="Official PUC Difficulty Table from sdvx.maya2silence.com/table"
+                            >
+                              👑 {u.pucTierText}
+                            </a>
+                          )}
+                        </div>
                       </td>
 
                       {/* Feasibility */}

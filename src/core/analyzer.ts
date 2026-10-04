@@ -16,8 +16,10 @@ import {
 } from './volforce';
 import {
   calculateUpscoreFeasibility,
+  hasSufficientPUCDensity,
   hasSufficientUCDensity,
 } from './upscoreFeasibility';
+import { getPucChartInfo, formatPucTierBadge } from './pucTable';
 import { isChartInVersion } from './versionFilter';
 
 export interface AnalyzeProfileOptions {
@@ -405,6 +407,64 @@ export function analyzeProfile(
             description: `Upgrade to Ultimate Chain (UC) for an instant ${lampGainText} lamp multiplier boost on this chart!`,
             effortRating: 2,
             sTierText: sTier,
+            levelNum: level,
+            feasibility,
+          });
+        }
+      }
+    }
+
+    // Opportunity 3D: Lamp Upgrade to Perfect Ultimate Chain (PUC)
+    // Leverages official tables from sdvx.maya2silence.com/table
+    if (
+      s.lamp !== 'PERFECT ULTIMATE CHAIN' &&
+      (
+        (s.score >= 9_950_000 && hasSufficientPUCDensity(effectiveVF, s.chart)) ||
+        (s.score >= 9_920_000 && s.lamp === 'ULTIMATE CHAIN' && hasSufficientPUCDensity(effectiveVF, s.chart)) ||
+        s.score >= 9_980_000
+      )
+    ) {
+      const targetScore = 10_000_000;
+      const targetLamp: SDVXLamp = 'PERFECT ULTIMATE CHAIN';
+      const pucInfo = getPucChartInfo(s.chart.data?.inGameID, s.chart.difficulty, s.song.title);
+      const effectiveLevel = version === 'vf7' && pucInfo?.constant ? pucInfo.constant : level;
+      const targetVF = calculateChartVF(targetScore, targetLamp, effectiveLevel, version);
+
+      const netGain = s.inTop50
+        ? targetVF - s.vf
+        : Math.max(0, targetVF - top50Cutoff);
+
+      if (netGain > 0.0009) {
+        const feasibility = calculateUpscoreFeasibility(
+          effectiveVF,
+          s.chart,
+          s.score,
+          targetScore,
+          'S',
+          targetLamp,
+        );
+
+        if (feasibility.feasibilityPercent >= 35) {
+          const pucBadge = pucInfo ? ` (${formatPucTierBadge(pucInfo)})` : '';
+          upscores.push({
+            id: `upscore-${s.chart.chartID}-lamp-puc`,
+            chart: s.chart,
+            song: s.song,
+            currentScore: s.score,
+            currentLamp: s.lamp,
+            currentGrade: s.grade,
+            currentVF: s.vf,
+            targetScore,
+            targetLamp,
+            targetGrade: 'S',
+            targetVF,
+            netVFGain: Math.round(netGain * 1000) / 1000,
+            category: 'lamp-upgrade',
+            description: `Upgrade to Perfect Ultimate Chain (PUC)${pucBadge} for maximum 110% lamp coefficient!`,
+            effortRating: 3,
+            sTierText: sTier,
+            pucTierText: pucInfo ? formatPucTierBadge(pucInfo) : undefined,
+            pucConstant: pucInfo ? pucInfo.constant : undefined,
             levelNum: level,
             feasibility,
           });

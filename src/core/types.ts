@@ -198,6 +198,8 @@ export interface UpscoreOpportunity {
   description: string;
   effortRating: number; // 1 (easiest) - 5 (hardest)
   sTierText?: string;
+  pucTierText?: string;
+  pucConstant?: number;
   levelNum: number;
   feasibility?: UpscoreFeasibility;
 }
@@ -210,6 +212,8 @@ export interface FarmableOpportunity {
   difficulty: SDVXDifficulty;
   sTier?: KamaiTierInfo;
   clearTier?: KamaiTierInfo;
+  pucTier?: KamaiTierInfo;
+  pucConstant?: number;
   individualDifference: boolean;
   projectedScore: number;
   projectedLamp: SDVXLamp;
@@ -230,7 +234,7 @@ export type RoadmapStrategy =
   | 'upscores-first'
   | 'farmables-only';
 
-export type RoadmapTargetLamp = 'EXCESSIVE CLEAR' | 'ULTIMATE CHAIN' | 'CLEAR' | 'PERFECT ULTIMATE CHAIN';
+export type RoadmapTargetLamp = 'EXCESSIVE CLEAR' | 'ULTIMATE CHAIN' | 'CLEAR' | 'PERFECT ULTIMATE CHAIN' | 'MAXXIVE CLEAR';
 
 export interface RoadmapStepAlternative {
   chart: KamaiChart;
@@ -246,6 +250,7 @@ export interface RoadmapStepAlternative {
   rationale: string;
   primaryFactor: string;
   feasibility?: UpscoreFeasibility;
+  pucTierText?: string;
 }
 
 export interface RoadmapStep {
@@ -270,6 +275,7 @@ export interface RoadmapStep {
   strategyAdjusted?: boolean;
   strategyAdjustmentReason?: string;
   isHigherStuff?: boolean;
+  pucTierText?: string;
 }
 
 export type RoadmapStepList = RoadmapStep[] & {

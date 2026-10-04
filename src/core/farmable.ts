@@ -10,6 +10,7 @@ import {
 import { calculateChartVF } from './volforce';
 import { calculateUpscoreFeasibility } from './upscoreFeasibility';
 import { isChartInVersion } from './versionFilter';
+import { getPucChartInfo, formatPucTierBadge } from './pucTable';
 
 export interface FarmableOptions {
   version: VolforceVersion;
@@ -76,7 +77,7 @@ export function findFarmables(
   } = options;
 
   const results: FarmableOpportunity[] = [];
-  const targetScore = 9_900_000; // Benchmark: S rank
+  const targetScore = targetLamp === 'PERFECT ULTIMATE CHAIN' ? 10_000_000 : 9_900_000;
 
   for (const chart of allCharts) {
     const levelNum = chart.levelNum || parseFloat(chart.level) || 0;
@@ -104,6 +105,10 @@ export function findFarmables(
         artist: 'Unknown Artist',
       };
 
+    const pucInfo = getPucChartInfo(chart.data?.inGameID, chart.difficulty, song.title);
+    const effectiveLevelNum =
+      version === 'vf7' && pucInfo?.constant ? pucInfo.constant : levelNum;
+
     // Check if user already played this chart
     const existingPB = existingPBsMap.get(chart.chartID);
     let netGain = 0;
@@ -124,12 +129,12 @@ export function findFarmables(
       chartTargetLamp = 'MAXXIVE CLEAR';
     }
 
-    const projectedVF = calculateChartVF(targetScore, chartTargetLamp, levelNum, version);
+    const projectedVF = calculateChartVF(targetScore, chartTargetLamp, effectiveLevelNum, version);
 
     if (existingPB) {
       // If user already has an S rank on this:
       if (existingScore && existingScore >= 9_900_000) {
-        if (existingLamp === 'EXCESSIVE CLEAR') {
+        if (existingLamp === 'EXCESSIVE CLEAR' && chartTargetLamp === 'EXCESSIVE CLEAR') {
           // Can upgrade to MAXXIVE CLEAR!
         } else if (
           chartTargetLamp === 'ULTIMATE CHAIN' &&
@@ -137,6 +142,11 @@ export function findFarmables(
           existingLamp !== 'PERFECT ULTIMATE CHAIN'
         ) {
           // Keep as UC upgrade candidate
+        } else if (
+          chartTargetLamp === 'PERFECT ULTIMATE CHAIN' &&
+          existingLamp !== 'PERFECT ULTIMATE CHAIN'
+        ) {
+          // Keep as PUC upgrade candidate
         } else {
           continue;
         }
@@ -179,7 +189,9 @@ export function findFarmables(
     let primaryAdvantage = '';
 
     const lampTag =
-      chartTargetLamp === 'ULTIMATE CHAIN'
+      chartTargetLamp === 'PERFECT ULTIMATE CHAIN'
+        ? 'PUC (10m)'
+        : chartTargetLamp === 'ULTIMATE CHAIN'
         ? 'S + UC'
         : chartTargetLamp === 'MAXXIVE CLEAR'
         ? 'S + Maxxive'
@@ -187,7 +199,15 @@ export function findFarmables(
         ? 'S + Clear'
         : 'S + Excessive';
 
-    if (version === 'vf7') {
+    if (chartTargetLamp === 'PERFECT ULTIMATE CHAIN') {
+      const pucEase = pucInfo ? pucInfo.easeScore : 5;
+      const netGainComponent = netGain * 1000 * 6;
+      const tierEaseComponent = pucEase * 35;
+      const gimmickPenalty = individualDiff ? 30 : 0;
+      farmabilityScore = netGainComponent + tierEaseComponent - gimmickPenalty;
+      const pucBadge = pucInfo ? ` | PUC: ${formatPucTierBadge(pucInfo)}` : '';
+      primaryAdvantage = `PUC 10m Goal (+${netGain.toFixed(3)} VF yield)${pucBadge}`;
+    } else if (version === 'vf7') {
       /**
        * In VF7 Mode:
        * PRIMARY: The exact decimal levelNum directly determines the VF yield!
@@ -229,6 +249,10 @@ export function findFarmables(
       difficulty: chart.difficulty,
       sTier: chart.data?.sTier,
       clearTier: chart.data?.clearTier,
+      pucTier: pucInfo
+        ? { text: formatPucTierBadge(pucInfo), value: pucInfo.constant }
+        : chart.data?.pucTier,
+      pucConstant: pucInfo?.constant,
       individualDifference: individualDiff,
       projectedScore: targetScore,
       projectedLamp: targetLamp,

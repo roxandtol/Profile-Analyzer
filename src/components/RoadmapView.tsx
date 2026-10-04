@@ -100,6 +100,14 @@ const TARGET_LAMPS: { id: SDVXLamp; label: string; desc: string; icon: string; c
     coefVF6: '105%',
   },
   {
+    id: 'PERFECT ULTIMATE CHAIN',
+    label: 'Perfect (PUC)',
+    desc: 'Perfect Ultimate Chain (10,000,000 pts) - maximum 110% lamp coefficient from maya2silence tables',
+    icon: '👑',
+    coefVF7: '110%',
+    coefVF6: '110%',
+  },
+  {
     id: 'CLEAR',
     label: 'Normal Clear',
     desc: 'Standard 70% effective rate clear (100% coefficient) - safe consistency goal',
@@ -216,7 +224,9 @@ export const RoadmapView: React.FC<RoadmapViewProps> = ({
                     title={l.desc}
                     className={`px-3 py-1.5 rounded-lg text-xs font-mono font-medium transition-all flex items-center gap-1.5 border ${
                       isActive
-                        ? l.id === 'ULTIMATE CHAIN'
+                        ? l.id === 'PERFECT ULTIMATE CHAIN'
+                          ? 'bg-yellow-500/25 border-yellow-500 text-yellow-300 font-bold shadow-md shadow-yellow-500/20 scale-[1.02]'
+                          : l.id === 'ULTIMATE CHAIN'
                           ? 'bg-rose-500/25 border-rose-500 text-rose-300 font-bold shadow-md shadow-rose-500/20 scale-[1.02]'
                           : l.id === 'MAXXIVE CLEAR'
                           ? 'bg-amber-500/25 border-amber-500 text-amber-300 font-bold shadow-md shadow-amber-500/20 scale-[1.02]'
@@ -450,6 +460,17 @@ export const RoadmapView: React.FC<RoadmapViewProps> = ({
                         Pusher
                       </span>
                     )}
+                    {step.pucTierText && (
+                      <a
+                        href="https://sdvx.maya2silence.com/table"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-1.5 py-0.5 rounded text-[9px] sm:text-[10px] font-mono font-bold uppercase tracking-wider bg-yellow-500/20 text-yellow-300 border border-yellow-500/40 shrink-0 hover:bg-yellow-500/30 transition-colors flex items-center gap-1"
+                        title="Official PUC Difficulty Table from sdvx.maya2silence.com/table"
+                      >
+                        👑 {step.pucTierText}
+                      </a>
+                    )}
                     <a
                       href={getKamaiChartUrl(step.chart.chartID)}
                       target="_blank"
@@ -540,6 +561,19 @@ export const RoadmapView: React.FC<RoadmapViewProps> = ({
                         <span className="sm:hidden">UC</span>
                         <span className="hidden sm:inline">UC ({version === 'vf7' ? '106%' : '105%'})</span>
                       </button>
+                      <button
+                        type="button"
+                        onClick={() => onChangeStepLamp?.(step.stepNumber, 'PERFECT ULTIMATE CHAIN')}
+                        className={`px-1.5 sm:px-2 py-0.5 rounded text-[9px] sm:text-[10px] font-mono font-bold transition-all border shrink-0 ${
+                          step.targetLamp === 'PERFECT ULTIMATE CHAIN'
+                            ? 'bg-yellow-500/25 text-yellow-400 border-yellow-500/60 shadow-sm'
+                            : 'border-transparent text-gray-500 hover:text-gray-300'
+                        }`}
+                        title="Perfect Ultimate Chain - 10,000,000 pts (110% lamp coefficient from maya2silence tables)"
+                      >
+                        <span className="sm:hidden">PUC</span>
+                        <span className="hidden sm:inline">PUC (110%)</span>
+                      </button>
                     </div>
 
                     <span className="text-gray-600 hidden sm:inline">|</span>
@@ -617,7 +651,9 @@ export const RoadmapView: React.FC<RoadmapViewProps> = ({
                                   <span
                                     className={`px-1.5 py-0.5 rounded text-[9px] font-mono font-bold border ${altLampBadge.bg} ${altLampBadge.text} ${altLampBadge.border}`}
                                   >
-                                    {alt.targetLamp === 'ULTIMATE CHAIN'
+                                    {alt.targetLamp === 'PERFECT ULTIMATE CHAIN'
+                                      ? 'PUC'
+                                      : alt.targetLamp === 'ULTIMATE CHAIN'
                                       ? 'UC'
                                       : alt.targetLamp === 'MAXXIVE CLEAR'
                                       ? 'MAX'
@@ -625,6 +661,14 @@ export const RoadmapView: React.FC<RoadmapViewProps> = ({
                                       ? 'EXC'
                                       : 'CLR'}
                                   </span>
+                                  {alt.pucTierText && (
+                                    <span
+                                      className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-yellow-500/20 text-yellow-300 border border-yellow-500/40"
+                                      title="maya2silence PUC Table Tier"
+                                    >
+                                      👑 {alt.pucTierText}
+                                    </span>
+                                  )}
                                   {altFeasBadge && alt.feasibility && (
                                     <span
                                       className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold border whitespace-nowrap ${altFeasBadge.bg} ${altFeasBadge.text} ${altFeasBadge.border}`}
